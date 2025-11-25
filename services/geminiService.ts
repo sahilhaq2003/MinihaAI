@@ -46,8 +46,8 @@ export const humanizeText = async (text: string, options: HumanizeOptions): Prom
 
   try {
     const ai = getAiClient(options.apiKey);
-    // Using gemini-3-pro-preview for superior nuance
-    const model = 'gemini-3-pro-preview';
+    // Updated to gemini-2.0-flash as requested
+    const model = 'gemini-2.0-flash';
     const cleanInput = preprocessText(text);
     
     // High creativity settings to beat ZeroGPT/Originality (High temperature = High Perplexity)
@@ -169,7 +169,7 @@ export const evaluateQuality = async (original: string, rewritten: string, apiKe
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -246,7 +246,7 @@ export const detectAIContent = async (text: string, apiKey?: string): Promise<De
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",

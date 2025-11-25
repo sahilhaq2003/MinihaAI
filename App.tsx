@@ -105,7 +105,7 @@ const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
       </main>
 
       <footer className="py-6 text-center text-slate-400 text-xs sm:text-sm border-t border-slate-100 bg-slate-50">
-        © 2024 MinihaAI. All rights reserved.
+        © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
       </footer>
     </div>
   );
@@ -271,6 +271,9 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
             </button>
         </div>
       </div>
+      <footer className="absolute bottom-4 left-0 right-0 text-center text-slate-400 text-xs">
+        © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
+      </footer>
     </div>
   );
 };
@@ -952,6 +955,9 @@ const App = () => {
                 />
              )}
           </main>
+          <footer className="py-4 text-center text-slate-400 text-xs sm:text-sm border-t border-slate-100 bg-white">
+            © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
+          </footer>
         </>
        )}
        

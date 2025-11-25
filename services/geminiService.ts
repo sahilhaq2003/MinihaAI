@@ -2,10 +2,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Tone, DetectionResult, EvaluationResult, HumanizeOptions, Vocabulary } from "../types";
 
+// Default API key (fallback for production)
+const DEFAULT_API_KEY = 'AIzaSyBQTFW3ISo_9FPWgvFP4eEzEbUgPTTPwpY';
+
 // Helper to safely get AI client
 const getAiClient = (apiKey?: string) => {
-  // Priority: UI-provided key > Environment Variable
-  const key = apiKey || import.meta.env.VITE_GEMINI_API_KEY;
+  // Priority: UI-provided key > Environment Variable > Default
+  const key = apiKey || import.meta.env.VITE_GEMINI_API_KEY || DEFAULT_API_KEY;
 
   if (!key) {
     throw new Error("MISSING_API_KEY");

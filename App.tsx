@@ -347,8 +347,8 @@ const App = () => {
   const [vocabulary, setVocabulary] = useState<Vocabulary>(Vocabulary.STANDARD);
   const [intensity, setIntensity] = useState<number>(50);
   
-  // API Key State (BYOK) - Pre-filled with user provided key
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || 'AIzaSyBQTFW3ISo_9FPWgvFP4eEzEbUgPTTPwpY');
+  // API Key State (BYOK) - Read from environment variable or localStorage
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [showSettings, setShowSettings] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

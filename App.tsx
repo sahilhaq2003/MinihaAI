@@ -105,7 +105,7 @@ const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
       </main>
 
       <footer className="py-6 text-center text-slate-400 text-xs sm:text-sm border-t border-slate-100 bg-slate-50">
-        © 2024 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed by Sahil haq</span>
+        © 2024 MinihaAI. All rights reserved.
       </footer>
     </div>
   );

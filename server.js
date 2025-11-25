@@ -1,53 +1,62 @@
 /**
- * BACKEND SERVER CODE (Node.js / Express)
+ * BACKEND SERVER CODE (Node.js / Express / SQLite)
  * 
- * Dependencies: npm install express cors body-parser google-auth-library mongoose
+ * Dependencies: npm install express cors body-parser google-auth-library sqlite3 dotenv uuid
  * Run: node server.js
  */
+
+// Load environment variables from .env file
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { OAuth2Client } = require('google-auth-library');
-const mongoose = require('mongoose');
+const sqlite3 = require('sqlite3').verbose();
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE';
 
-// --- MONGODB CONNECTION ---
-// Note: 'Sahil@2003' contains special char '@', so it is encoded as 'Sahil%402003'
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://sahilhaq2003_db_user:Sahil%402003@cluster0.05nysek.mongodb.net/miniha_db?retryWrites=true&w=majority';
-
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB Atlas'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
-
-// --- USER MODEL ---
-const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String }, // Stored as plain text for this demo (Use bcrypt in production!)
-  name: String,
-  picture: String,
-  provider: { type: String, default: 'email' }, // 'email' or 'google'
-  isPremium: { type: Boolean, default: false },
-  googleId: String,
-  createdAt: { type: Date, default: Date.now }
+// --- SQLITE DATABASE CONNECTION ---
+const dbPath = path.resolve(__dirname, 'miniha.db');
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('❌ SQLite connection error:', err.message);
+  } else {
+    console.log('✅ Connected to SQLite database');
+  }
 });
 
-const User = mongoose.model('User', userSchema);
+// --- INITIALIZE TABLES ---
+db.serialize(() => {
+  // Users Table
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE,
+    password TEXT,
+    name TEXT,
+    picture TEXT,
+    provider TEXT,
+    is_premium INTEGER DEFAULT 0,
+    google_id TEXT,
+    created_at TEXT
+  )`);
 
-// --- TRANSACTION MODEL (For Payments) ---
-const transactionSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  amount: { type: String, required: true }, // e.g., "$19.00"
-  status: { type: String, default: 'Paid' }, // Paid, Pending, Failed
-  date: { type: Date, default: Date.now },
-  invoiceId: { type: String },
-  planType: { type: String, default: 'Pro Plan' }
+  // Transactions Table
+  db.run(`CREATE TABLE IF NOT EXISTS transactions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    amount TEXT,
+    status TEXT,
+    date TEXT,
+    invoice_id TEXT,
+    plan_type TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  )`);
 });
-
-const Transaction = mongoose.model('Transaction', transactionSchema);
 
 const client = new OAuth2Client(CLIENT_ID);
 
@@ -60,37 +69,62 @@ app.use(cors({
 
 app.use(bodyParser.json());
 
+// Helper to wrap db.get in Promise
+const dbGet = (query, params = []) => {
+    return new Promise((resolve, reject) => {
+        db.get(query, params, (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+        });
+    });
+};
+
+// Helper to wrap db.run in Promise
+const dbRun = (query, params = []) => {
+    return new Promise((resolve, reject) => {
+        db.run(query, params, function(err) {
+            if (err) reject(err);
+            else resolve(this);
+        });
+    });
+};
+
+// Helper to wrap db.all in Promise
+const dbAll = (query, params = []) => {
+    return new Promise((resolve, reject) => {
+        db.all(query, params, (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+};
+
 // --- GOOGLE AUTH ---
 app.post('/api/auth/google', async (req, res) => {
   const { token } = req.body;
 
   try {
     // SPECIAL HANDLING FOR DEMO/TESTING
-    // If we receive the simulation token from the frontend, we bypass Google verification
-    // and create/return a MongoDB user directly.
     if (token === 'dummy_token_for_simulation') {
         const demoEmail = 'demo_user@example.com';
-        let user = await User.findOne({ email: demoEmail });
+        let user = await dbGet("SELECT * FROM users WHERE email = ?", [demoEmail]);
         
         if (!user) {
-            user = await User.create({
-                email: demoEmail,
-                name: 'Demo Google User',
-                picture: `https://api.dicebear.com/7.x/avataaars/svg?seed=google_demo`,
-                provider: 'google',
-                googleId: 'dummy_google_id_12345',
-                isPremium: false
-            });
+            const userId = uuidv4();
+            await dbRun(`INSERT INTO users (id, email, name, picture, provider, google_id, is_premium, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [userId, demoEmail, 'Demo Google User', 'https://api.dicebear.com/7.x/avataaars/svg?seed=google_demo', 'google', 'dummy_google_id_12345', 0, new Date().toISOString()]
+            );
+            user = await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
         }
         
         return res.status(200).json({
             success: true,
             user: {
-                id: user._id.toString(),
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 avatar: user.picture,
-                isPremium: user.isPremium
+                isPremium: !!user.is_premium
             }
         });
     }
@@ -107,35 +141,30 @@ app.post('/api/auth/google', async (req, res) => {
     const name = payload['name'];
     const picture = payload['picture'];
 
-    // Check if user exists in MongoDB
-    let user = await User.findOne({ email });
+    // Check if user exists
+    let user = await dbGet("SELECT * FROM users WHERE email = ?", [email]);
 
     if (!user) {
         // Create new user
-        user = await User.create({
-            email,
-            name,
-            picture,
-            provider: 'google',
-            googleId: googleUserId,
-            isPremium: false
-        });
+        const userId = uuidv4();
+        await dbRun(`INSERT INTO users (id, email, name, picture, provider, google_id, is_premium, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, email, name, picture, 'google', googleUserId, 0, new Date().toISOString()]
+        );
+        user = await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
     } else if (user.provider !== 'google') {
-        // Update existing user with Google ID if they previously signed up with email
-        user.googleId = googleUserId;
-        user.provider = 'google'; 
-        user.picture = picture; // Update avatar
-        await user.save();
+        // Update existing user with Google ID
+        await dbRun("UPDATE users SET google_id = ?, provider = ?, picture = ? WHERE id = ?", [googleUserId, 'google', picture, user.id]);
+        user = await dbGet("SELECT * FROM users WHERE id = ?", [user.id]);
     }
 
     res.status(200).json({
         success: true,
         user: {
-            id: user._id.toString(),
+            id: user.id,
             name: user.name,
             email: user.email,
             avatar: user.picture,
-            isPremium: user.isPremium
+            isPremium: !!user.is_premium
         }
     });
 
@@ -150,28 +179,30 @@ app.post('/api/auth/signup', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const existingUser = await User.findOne({ email });
+        const existingUser = await dbGet("SELECT * FROM users WHERE email = ?", [email]);
         if (existingUser) {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
 
-        // Create User in MongoDB
-        const newUser = await User.create({
-            email,
-            password, // Note: In a real app, use bcrypt.hash(password, 10) here!
-            name: email.split('@')[0],
-            provider: 'email',
-            picture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
-        });
+        const userId = uuidv4();
+        const picture = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
+        const name = email.split('@')[0];
+
+        // Create User
+        await dbRun(`INSERT INTO users (id, email, password, name, picture, provider, is_premium, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, email, password, name, picture, 'email', 0, new Date().toISOString()]
+        );
+
+        const newUser = await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
 
         res.status(201).json({
             success: true,
             user: {
-                id: newUser._id.toString(),
+                id: newUser.id,
                 name: newUser.name,
                 email: newUser.email,
                 avatar: newUser.picture,
-                isPremium: newUser.isPremium
+                isPremium: !!newUser.is_premium
             }
         });
     } catch (error) {
@@ -185,7 +216,7 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({ email });
+        const user = await dbGet("SELECT * FROM users WHERE email = ?", [email]);
 
         if (!user) {
             return res.status(400).json({ success: false, message: 'User not found' });
@@ -203,11 +234,11 @@ app.post('/api/auth/login', async (req, res) => {
         res.status(200).json({
             success: true,
             user: {
-                id: user._id.toString(),
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 avatar: user.picture,
-                isPremium: user.isPremium
+                isPremium: !!user.is_premium
             }
         });
     } catch (error) {
@@ -220,19 +251,20 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/user/:userId/transactions', async (req, res) => {
     try {
         const { userId } = req.params;
-        const transactions = await Transaction.find({ userId }).sort({ date: -1 });
+        const transactions = await dbAll("SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC", [userId]);
         
         // Format for frontend
         const formatted = transactions.map(t => ({
-            id: t._id,
-            date: t.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+            id: t.id,
+            date: new Date(t.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
             amount: t.amount,
             status: t.status,
-            invoice: t.invoiceId
+            invoice: t.invoice_id
         }));
 
         res.status(200).json({ success: true, transactions: formatted });
     } catch (error) {
+        console.error("Tx Error:", error);
         res.status(500).json({ success: false, message: "Error fetching transactions" });
     }
 });
@@ -241,21 +273,22 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
 app.post('/api/payment/create', async (req, res) => {
     const { userId, amount } = req.body;
     try {
-        // 1. In real life, you would call Stripe/PayPal API here
-        // 2. Update User to Premium
-        await User.findByIdAndUpdate(userId, { isPremium: true });
+        // Update User to Premium
+        await dbRun("UPDATE users SET is_premium = 1 WHERE id = ?", [userId]);
         
-        // 3. Record Transaction
-        const newTx = await Transaction.create({
-            userId,
-            amount,
-            status: 'Paid',
-            invoiceId: '#INV-' + Math.floor(Math.random() * 1000000),
-            planType: 'Pro Plan'
-        });
+        // Record Transaction
+        const txId = uuidv4();
+        const invoiceId = '#INV-' + Math.floor(Math.random() * 1000000);
+        
+        await dbRun(`INSERT INTO transactions (id, user_id, amount, status, date, invoice_id, plan_type) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [txId, userId, amount, 'Paid', new Date().toISOString(), invoiceId, 'Pro Plan']
+        );
+
+        const newTx = await dbGet("SELECT * FROM transactions WHERE id = ?", [txId]);
 
         res.status(200).json({ success: true, transaction: newTx });
     } catch (error) {
+        console.error("Payment Error:", error);
         res.status(500).json({ success: false, message: "Payment failed" });
     }
 });

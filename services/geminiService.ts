@@ -1,7 +1,17 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Tone, DetectionResult, EvaluationResult, HumanizeOptions, Vocabulary } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to safely get AI client
+const getAiClient = (apiKey?: string) => {
+  // Priority: UI-provided key > Environment Variable
+  const key = apiKey || process.env.API_KEY;
+
+  if (!key) {
+    throw new Error("MISSING_API_KEY");
+  }
+  return new GoogleGenAI({ apiKey: key });
+};
 
 // --- PIPELINE STEP 1: PREPROCESSING ---
 // Cleans input to remove AI formatting artifacts before processing
@@ -34,17 +44,18 @@ const postprocessText = (text: string): string => {
 export const humanizeText = async (text: string, options: HumanizeOptions): Promise<string> => {
   if (!text.trim()) return "";
 
-  // Using gemini-3-pro-preview for superior nuance
-  const model = 'gemini-3-pro-preview';
-  const cleanInput = preprocessText(text);
-  
-  // High creativity settings to beat ZeroGPT/Originality (High temperature = High Perplexity)
-  // Intensity 0 -> Temp 0.85
-  // Intensity 100 -> Temp 1.65 (Pushing boundaries for Originality.ai)
-  const baseTemp = 0.85 + (options.intensity / 100) * 0.8;
-  const temperature = Math.min(Math.max(baseTemp, 0.7), 1.7);
-
   try {
+    const ai = getAiClient(options.apiKey);
+    // Using gemini-3-pro-preview for superior nuance
+    const model = 'gemini-3-pro-preview';
+    const cleanInput = preprocessText(text);
+    
+    // High creativity settings to beat ZeroGPT/Originality (High temperature = High Perplexity)
+    // Intensity 0 -> Temp 0.85
+    // Intensity 100 -> Temp 1.65 (Pushing boundaries for Originality.ai)
+    const baseTemp = 0.85 + (options.intensity / 100) * 0.8;
+    const temperature = Math.min(Math.max(baseTemp, 0.7), 1.7);
+
     // --- PIPELINE STEP 2: HUMANIZATION PASS (Drafting) ---
     // Specifically targets: Turnitin, Originality.ai, GPTZero, ZeroGPT, Copyleaks, DrillBit, AntiPlag
     const promptPass1 = `
@@ -127,32 +138,36 @@ export const humanizeText = async (text: string, options: HumanizeOptions): Prom
 
     return postprocessText(refinedDraft);
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "MISSING_API_KEY") {
+        throw new Error("MISSING_API_KEY");
+    }
     console.error("Gemini API Pipeline Error:", error);
     throw new Error("Failed to humanize text. Please try again.");
   }
 };
 
-export const evaluateQuality = async (original: string, rewritten: string): Promise<EvaluationResult> => {
+export const evaluateQuality = async (original: string, rewritten: string, apiKey?: string): Promise<EvaluationResult> => {
   if (!original.trim() || !rewritten.trim()) throw new Error("Missing content for evaluation");
 
-  const prompt = `
-    You are a Senior Editor and Quality Assurance Specialist. 
-    Compare the ORIGINAL AI text with the REWRITTEN humanized version.
-    
-    Evaluate on three criteria:
-    1. **Human-Likeness**: Does the rewrite sound authentically human, or does it still feel robotic?
-    2. **Meaning Preservation**: Is the core message of the original preserved in the rewrite?
-    3. **Sentence Variety**: Does the rewrite use a good mix of short and long sentences?
-
-    ORIGINAL: "${original.substring(0, 1000)}"
-    
-    REWRITTEN: "${rewritten.substring(0, 1000)}"
-
-    Provide results in strict JSON.
-  `;
-
   try {
+    const ai = getAiClient(apiKey);
+    const prompt = `
+        You are a Senior Editor and Quality Assurance Specialist. 
+        Compare the ORIGINAL AI text with the REWRITTEN humanized version.
+        
+        Evaluate on three criteria:
+        1. **Human-Likeness**: Does the rewrite sound authentically human, or does it still feel robotic?
+        2. **Meaning Preservation**: Is the core message of the original preserved in the rewrite?
+        3. **Sentence Variety**: Does the rewrite use a good mix of short and long sentences?
+
+        ORIGINAL: "${original.substring(0, 1000)}"
+        
+        REWRITTEN: "${rewritten.substring(0, 1000)}"
+
+        Provide results in strict JSON.
+    `;
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -188,7 +203,10 @@ export const evaluateQuality = async (original: string, rewritten: string): Prom
     
     return JSON.parse(textResponse) as EvaluationResult;
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "MISSING_API_KEY") {
+        throw new Error("MISSING_API_KEY");
+    }
     console.error("Evaluation API Error:", error);
     return {
       humanScore: 0,
@@ -199,33 +217,34 @@ export const evaluateQuality = async (original: string, rewritten: string): Prom
   }
 };
 
-export const detectAIContent = async (text: string): Promise<DetectionResult> => {
+export const detectAIContent = async (text: string, apiKey?: string): Promise<DetectionResult> => {
   if (!text.trim()) throw new Error("Text is empty");
 
-  // Robust prompt for detection simulating top detectors including DrillBit/AntiPlag
-  const prompt = `
-    Act as a Master AI Detector combining the logic of Turnitin, DrillBit, AntiPlag, Originality.ai, and GPTZero.
-    Analyze the following text for AI generation patterns.
-
-    STRICT CRITERIA FOR "AI" VERDICT (Flag these):
-    1.  **Originality.ai Logic**: Uses "Glue Words" (Furthermore, Moreover, In conclusion).
-    2.  **Turnitin/DrillBit Logic**: Perfect 5-paragraph essay structure with topic sentences. Linear logic flow.
-    3.  **GPTZero Logic**: Low Perplexity (predictable words) and Low Burstiness (uniform sentence length).
-    4.  **Vocabulary**: Words like "delve", "tapestry", "underscores".
-
-    CRITERIA FOR "HUMAN" VERDICT:
-    - Conversational flow.
-    - High Burstiness (mix of 3-word and 30-word sentences).
-    - Imperfect transitions (starting sentences with And/But).
-    - Unpredictable logic structure (e.g. starting with an example).
-    
-    INPUT TEXT:
-    "${text.substring(0, 3000)}"
-
-    Provide the result in strict JSON format.
-  `;
-
   try {
+    const ai = getAiClient(apiKey);
+    // Robust prompt for detection simulating top detectors including DrillBit/AntiPlag
+    const prompt = `
+        Act as a Master AI Detector combining the logic of Turnitin, DrillBit, AntiPlag, Originality.ai, and GPTZero.
+        Analyze the following text for AI generation patterns.
+
+        STRICT CRITERIA FOR "AI" VERDICT (Flag these):
+        1.  **Originality.ai Logic**: Uses "Glue Words" (Furthermore, Moreover, In conclusion).
+        2.  **Turnitin/DrillBit Logic**: Perfect 5-paragraph essay structure with topic sentences. Linear logic flow.
+        3.  **GPTZero Logic**: Low Perplexity (predictable words) and Low Burstiness (uniform sentence length).
+        4.  **Vocabulary**: Words like "delve", "tapestry", "underscores".
+
+        CRITERIA FOR "HUMAN" VERDICT:
+        - Conversational flow.
+        - High Burstiness (mix of 3-word and 30-word sentences).
+        - Imperfect transitions (starting sentences with And/But).
+        - Unpredictable logic structure (e.g. starting with an example).
+        
+        INPUT TEXT:
+        "${text.substring(0, 3000)}"
+
+        Provide the result in strict JSON format.
+    `;
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -267,7 +286,10 @@ export const detectAIContent = async (text: string): Promise<DetectionResult> =>
         };
     }
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "MISSING_API_KEY") {
+        throw new Error("MISSING_API_KEY");
+    }
     console.error("Detection API Error:", error);
     return {
       score: 0,

@@ -29,6 +29,7 @@ export interface HumanizeOptions {
   tone: Tone;
   vocabulary: Vocabulary;
   intensity: number; // 0-100
+  apiKey?: string;
 }
 
 export interface HistoryItem {

@@ -1,11 +1,13 @@
+
 import { UserProfile, Transaction } from "../types";
 
 // Configuration
 const MOCK_DELAY = 800;
-// ENABLE REAL BACKEND
-// Set this to FALSE for the demo environment so it uses LocalStorage instead of crashing
-// Set this to TRUE only if you are running 'node server.js' locally
+
+// FOR STATIC DEPLOYMENT: Always false.
+// This ensures the app works without a backend server.
 const USE_REAL_BACKEND = false; 
+
 const BACKEND_URL = 'http://localhost:3001/api';
 
 // Helper for local storage simulation (Fallback)

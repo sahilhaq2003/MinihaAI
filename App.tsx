@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { History } from './components/History';
@@ -30,7 +31,8 @@ import {
   Lock,
   Mail,
   PenLine,
-  FileText
+  FileText,
+  Key
 } from 'lucide-react';
 
 declare const google: any;
@@ -274,9 +276,58 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
   );
 };
 
+// --- Settings Modal for API Key ---
+const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void; apiKey: string; onSaveKey: (key: string) => void }> = ({ isOpen, onClose, apiKey, onSaveKey }) => {
+    const [tempKey, setTempKey] = useState(apiKey);
+    
+    useEffect(() => {
+        if(isOpen) setTempKey(apiKey);
+    }, [isOpen, apiKey]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 scale-100 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <Settings2 className="w-5 h-5 text-rose-600" /> Settings
+                    </h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                        <XCircle className="w-5 h-5" />
+                    </button>
+                </div>
+                
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Google Gemini API Key</label>
+                    <p className="text-xs text-slate-500 mb-3">
+                        This app runs entirely in your browser. We do not have a backend server for this deployment. 
+                        Please enter your own API Key to enable the AI features.
+                    </p>
+                    <input 
+                        type="password" 
+                        value={tempKey}
+                        onChange={(e) => setTempKey(e.target.value)}
+                        placeholder="AIzaSy..."
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono"
+                    />
+                    <div className="mt-2 text-xs text-rose-600 flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> Your key is stored locally in your browser.
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                    <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                    <Button onClick={() => { onSaveKey(tempKey); onClose(); }}>Save Key</Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const App: React.FC = () => {
   // --- State ---
-  const [view, setView] = useState<View>(View.LANDING); // Default to Landing
+  const [view, setView] = useState<View>(View.LANDING); 
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -286,6 +337,10 @@ const App: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [vocabulary, setVocabulary] = useState<Vocabulary>(Vocabulary.STANDARD);
   const [intensity, setIntensity] = useState<number>(50);
+  
+  // API Key State (BYOK)
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || '');
+  const [showSettings, setShowSettings] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -302,7 +357,6 @@ const App: React.FC = () => {
   // User Persistence
   const [userState, setUserState] = useState<UserState>(() => {
     const saved = localStorage.getItem('miniha_user');
-    // Default initial state
     return saved ? JSON.parse(saved) : { 
         isLoggedIn: false, 
         isPremium: false, 
@@ -310,10 +364,14 @@ const App: React.FC = () => {
     };
   });
 
-  // Sync user state to localStorage
   useEffect(() => {
     localStorage.setItem('miniha_user', JSON.stringify(userState));
   }, [userState]);
+
+  const handleSaveApiKey = (key: string) => {
+      setApiKey(key);
+      localStorage.setItem('miniha_api_key', key);
+  };
 
   // Initial View Logic
   useEffect(() => {
@@ -353,7 +411,6 @@ const App: React.FC = () => {
   const handleHumanize = async () => {
     if (!input.trim()) return;
     
-    // Feature gate for free users
     if (!userState.isPremium && (tone !== Tone.STANDARD || intensity > 70)) {
       setView(View.PRICING);
       return;
@@ -361,7 +418,6 @@ const App: React.FC = () => {
 
     setIsProcessing(true);
     setEvalResult(null); 
-    // On mobile, show user processing is happening then switch tab
     if (window.innerWidth < 1024) {
       setMobileTab('output');
     }
@@ -370,7 +426,8 @@ const App: React.FC = () => {
       const result = await humanizeText(input, {
         tone,
         vocabulary,
-        intensity
+        intensity,
+        apiKey // Pass key
       });
       setOutput(result);
       
@@ -386,10 +443,14 @@ const App: React.FC = () => {
         ...prev,
         history: [newItem, ...prev.history].slice(0, 50) 
       }));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to process text. Please try again.");
-      setMobileTab('input'); // Go back if error
+    } catch (err: any) {
+      if (err.message === "MISSING_API_KEY") {
+          setShowSettings(true); // Open settings to ask for key
+      } else {
+          console.error(err);
+          alert("Failed to process text. " + err.message);
+          setMobileTab('input');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -399,11 +460,15 @@ const App: React.FC = () => {
     if (!input || !output) return;
     setIsEvaluating(true);
     try {
-      const result = await evaluateQuality(input, output);
+      const result = await evaluateQuality(input, output, apiKey);
       setEvalResult(result);
-    } catch (err) {
-      console.error(err);
-      alert("Evaluation failed.");
+    } catch (err: any) {
+       if (err.message === "MISSING_API_KEY") {
+          setShowSettings(true);
+       } else {
+          console.error(err);
+          alert("Evaluation failed.");
+       }
     } finally {
       setIsEvaluating(false);
     }
@@ -413,11 +478,15 @@ const App: React.FC = () => {
     if (!detectorInput.trim()) return;
     setIsProcessing(true);
     try {
-        const result = await detectAIContent(detectorInput);
+        const result = await detectAIContent(detectorInput, apiKey);
         setDetectionResult(result);
-    } catch (err) {
-        console.error(err);
-        alert("Failed to detect content. Please try again.");
+    } catch (err: any) {
+        if (err.message === "MISSING_API_KEY") {
+            setShowSettings(true);
+        } else {
+            console.error(err);
+            alert("Failed to detect content. " + err.message);
+        }
     } finally {
         setIsProcessing(false);
     }
@@ -448,7 +517,7 @@ const App: React.FC = () => {
     setView(View.EDITOR);
     if (window.innerWidth < 1024) {
         setIsSidebarOpen(false);
-        setMobileTab('output'); // Show result
+        setMobileTab('output'); 
     }
   };
 
@@ -516,9 +585,7 @@ const App: React.FC = () => {
                                         r="58"
                                         cx="64"
                                         cy="64"
-                                        // Mobile sizing hack: svg viewBox scaling would be cleaner but this works for demo
                                     />
-                                    {/* Simplified Circle for mobile responsiveness logic */}
                                     <circle
                                         className={`${detectionResult.score > 60 ? 'text-rose-500' : detectionResult.score > 30 ? 'text-amber-500' : 'text-emerald-500'} transition-all duration-1000 ease-out`}
                                         strokeWidth="12"
@@ -856,11 +923,28 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-rose-100 selection:text-rose-900">
-      <Header 
-        currentView={view} 
-        onChangeView={setView} 
-        isPremium={userState.isPremium} 
-        onLogout={handleLogout}
+      <div className="sticky top-0 z-50">
+        <Header 
+            currentView={view} 
+            onChangeView={setView} 
+            isPremium={userState.isPremium} 
+            onLogout={handleLogout}
+        />
+        {/* API Key Indicator/Toggle */}
+        <button 
+            onClick={() => setShowSettings(true)}
+            className={`absolute top-4 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 p-2 rounded-full shadow-md border transition-all ${apiKey ? 'bg-white text-emerald-500 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse'}`}
+            title="API Key Settings"
+        >
+            <Key className="w-4 h-4" />
+        </button>
+      </div>
+      
+      <SettingsModal 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)} 
+        apiKey={apiKey} 
+        onSaveKey={handleSaveApiKey}
       />
       
       <main className="h-[calc(100vh-4rem)]">

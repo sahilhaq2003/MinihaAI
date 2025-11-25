@@ -345,7 +345,7 @@ const App = () => {
   const [intensity, setIntensity] = useState<number>(50);
   
   // API Key State (BYOK) - Pre-filled with user provided key
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || 'AIzaSyByS072DesWetmnAqhXMZD2oXR1riPx8FI');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || 'AIzaSyBfKg8y2jwDd4Ne480Rzz771QOxuKhtyrw');
   const [showSettings, setShowSettings] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

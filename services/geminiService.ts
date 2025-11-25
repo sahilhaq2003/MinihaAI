@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Tone, DetectionResult, EvaluationResult, HumanizeOptions, Vocabulary } from "../types";
 
 // Default API key (fallback for production)
-const DEFAULT_API_KEY = 'AIzaSyBQTFW3ISo_9FPWgvFP4eEzEbUgPTTPwpY';
+const DEFAULT_API_KEY = 'AIzaSyCO5ugrB87_9Cxmr4uU5WNCLnmq79C7wcs';
 
 // Helper to safely get AI client
 const getAiClient = (apiKey?: string) => {

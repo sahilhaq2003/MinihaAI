@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { History } from './components/History';
@@ -277,7 +276,14 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
 };
 
 // --- Settings Modal for API Key ---
-const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void; apiKey: string; onSaveKey: (key: string) => void }> = ({ isOpen, onClose, apiKey, onSaveKey }) => {
+interface SettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  apiKey: string;
+  onSaveKey: (key: string) => void;
+}
+
+const SettingsModal = ({ isOpen, onClose, apiKey, onSaveKey }: SettingsModalProps) => {
     const [tempKey, setTempKey] = useState(apiKey);
     
     useEffect(() => {
@@ -325,7 +331,7 @@ const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void; apiKey: st
     );
 };
 
-const App: React.FC = () => {
+const App = () => {
   // --- State ---
   const [view, setView] = useState<View>(View.LANDING); 
   const [input, setInput] = useState('');
@@ -338,8 +344,8 @@ const App: React.FC = () => {
   const [vocabulary, setVocabulary] = useState<Vocabulary>(Vocabulary.STANDARD);
   const [intensity, setIntensity] = useState<number>(50);
   
-  // API Key State (BYOK)
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || '');
+  // API Key State (BYOK) - Pre-filled with user provided key
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || 'AIzaSyByS072DesWetmnAqhXMZD2oXR1riPx8FI');
   const [showSettings, setShowSettings] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -913,75 +919,48 @@ const App: React.FC = () => {
     </div>
   );
 
-  // --- Main Render Decision ---
-  if (!userState.isLoggedIn) {
-      if (view === View.AUTH) {
-          return <AuthPage onLoginSuccess={handleLoginSuccess} onBack={() => setView(View.LANDING)} />;
-      }
-      return <LandingPage onGetStarted={() => setView(View.AUTH)} />;
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-rose-100 selection:text-rose-900">
-      <div className="sticky top-0 z-50">
-        <Header 
+    <div className="min-h-screen bg-white flex flex-col">
+       {/* Conditional Rendering for Views */}
+       {view === View.LANDING && <LandingPage onGetStarted={() => setView(View.AUTH)} />}
+
+       {view === View.AUTH && <AuthPage onLoginSuccess={handleLoginSuccess} onBack={() => setView(View.LANDING)} />}
+
+       {(view !== View.LANDING && view !== View.AUTH) && (
+        <>
+          <Header 
             currentView={view} 
             onChangeView={setView} 
             isPremium={userState.isPremium} 
             onLogout={handleLogout}
-        />
-        {/* API Key Indicator/Toggle */}
-        <button 
-            onClick={() => setShowSettings(true)}
-            className={`absolute top-4 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 p-2 rounded-full shadow-md border transition-all ${apiKey ? 'bg-white text-emerald-500 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse'}`}
-            title="API Key Settings"
-        >
-            <Key className="w-4 h-4" />
-        </button>
-      </div>
-      
-      <SettingsModal 
-        isOpen={showSettings} 
-        onClose={() => setShowSettings(false)} 
-        apiKey={apiKey} 
-        onSaveKey={handleSaveApiKey}
-      />
-      
-      <main className="h-[calc(100vh-4rem)]">
-        {view === View.EDITOR && renderEditor()}
-        {view === View.DETECTOR && (
-            <div className="h-full overflow-y-auto bg-slate-50">
-                {renderDetector()}
-            </div>
-        )}
-        
-        {view === View.PRICING && (
-          <div className="h-full overflow-y-auto bg-slate-50">
-            <Pricing onSubscribe={handleSubscribe} isPremium={userState.isPremium} />
-          </div>
-        )}
-        
-        {view === View.HISTORY && (
-          <div className="h-full overflow-hidden bg-slate-50 lg:hidden">
-            <History 
-              items={userState.history} 
-              onSelect={loadHistoryItem}
-              onClear={handleClearHistory}
-            />
-          </div>
-        )}
-
-        {view === View.PROFILE && userState.user && (
-          <div className="h-full overflow-y-auto bg-slate-50">
-             <Profile 
-                user={userState.user} 
-                history={userState.history}
-                onLogout={handleLogout}
-                onUpgrade={() => setView(View.PRICING)}
-             />
-          </div>
-        )}
-      </main>
+          />
+          <main className="flex-1 bg-slate-50 relative">
+             {view === View.EDITOR && renderEditor()}
+             {view === View.DETECTOR && renderDetector()}
+             {view === View.PRICING && <Pricing onSubscribe={handleSubscribe} isPremium={userState.isPremium} />}
+             {view === View.HISTORY && (
+                <div className="h-full bg-white">
+                    <History items={userState.history} onSelect={loadHistoryItem} onClear={handleClearHistory} />
+                </div>
+             )}
+             {view === View.PROFILE && (
+                <Profile 
+                    user={userState.user || { id: 'guest', name: 'Guest', email: '', isPremium: false }} 
+                    history={userState.history}
+                    onLogout={handleLogout}
+                    onUpgrade={() => setView(View.PRICING)}
+                />
+             )}
+          </main>
+        </>
+       )}
+       
+       <SettingsModal 
+          isOpen={showSettings} 
+          onClose={() => setShowSettings(false)} 
+          apiKey={apiKey} 
+          onSaveKey={handleSaveApiKey} 
+       />
     </div>
   );
 };

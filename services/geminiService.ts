@@ -5,7 +5,7 @@ import { Tone, DetectionResult, EvaluationResult, HumanizeOptions, Vocabulary } 
 // Helper to safely get AI client
 const getAiClient = (apiKey?: string) => {
   // Priority: UI-provided key > Environment Variable
-  const key = apiKey || process.env.API_KEY;
+  const key = apiKey || import.meta.env.VITE_GEMINI_API_KEY;
 
   if (!key) {
     throw new Error("MISSING_API_KEY");

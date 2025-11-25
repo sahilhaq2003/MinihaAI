@@ -347,8 +347,8 @@ const App = () => {
   const [vocabulary, setVocabulary] = useState<Vocabulary>(Vocabulary.STANDARD);
   const [intensity, setIntensity] = useState<number>(50);
   
-  // API Key State (BYOK) - Read from environment variable or localStorage
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('miniha_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
+  // API Key State - Read from environment variable (secured)
+  const [apiKey, setApiKey] = useState(() => import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('miniha_api_key') || '');
   const [showSettings, setShowSettings] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -453,13 +453,9 @@ const App = () => {
         history: [newItem, ...prev.history].slice(0, 50) 
       }));
     } catch (err: any) {
-      if (err.message === "MISSING_API_KEY") {
-          setShowSettings(true); // Open settings to ask for key
-      } else {
-          console.error(err);
-          alert("Failed to process text. " + err.message);
-          setMobileTab('input');
-      }
+      console.error(err);
+      alert("Failed to process text. " + err.message);
+      setMobileTab('input');
     } finally {
       setIsProcessing(false);
     }
@@ -472,12 +468,8 @@ const App = () => {
       const result = await evaluateQuality(input, output, apiKey);
       setEvalResult(result);
     } catch (err: any) {
-       if (err.message === "MISSING_API_KEY") {
-          setShowSettings(true);
-       } else {
-          console.error(err);
-          alert("Evaluation failed.");
-       }
+      console.error(err);
+      alert("Evaluation failed.");
     } finally {
       setIsEvaluating(false);
     }
@@ -490,12 +482,8 @@ const App = () => {
         const result = await detectAIContent(detectorInput, apiKey);
         setDetectionResult(result);
     } catch (err: any) {
-        if (err.message === "MISSING_API_KEY") {
-            setShowSettings(true);
-        } else {
-            console.error(err);
-            alert("Failed to detect content. " + err.message);
-        }
+      console.error(err);
+      alert("Failed to detect content. " + err.message);
     } finally {
         setIsProcessing(false);
     }
@@ -961,12 +949,6 @@ const App = () => {
         </>
        )}
        
-       <SettingsModal 
-          isOpen={showSettings} 
-          onClose={() => setShowSettings(false)} 
-          apiKey={apiKey} 
-          onSaveKey={handleSaveApiKey} 
-       />
     </div>
   );
 };

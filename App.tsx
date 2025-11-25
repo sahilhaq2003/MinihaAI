@@ -28,7 +28,9 @@ import {
   ShieldCheck,
   Zap,
   Lock,
-  Mail
+  Mail,
+  PenLine,
+  FileText
 } from 'lucide-react';
 
 declare const google: any;
@@ -37,61 +39,61 @@ declare const google: any;
 const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="py-6 px-4 sm:px-8 max-w-7xl mx-auto w-full flex justify-between items-center">
+      <header className="py-4 px-4 sm:px-8 max-w-7xl mx-auto w-full flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md z-10 border-b border-slate-50 sm:border-none sm:static">
         <div className="flex items-center gap-2">
            <div className="bg-rose-600 p-1.5 rounded-lg">
             <Sparkles className="w-5 h-5 text-white" />
            </div>
-           <span className="text-xl font-bold text-slate-900 tracking-tight">MinihaAI</span>
+           <span className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">MinihaAI</span>
         </div>
-        <button onClick={onGetStarted} className="text-sm font-medium text-slate-600 hover:text-slate-900">
+        <button onClick={onGetStarted} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 bg-slate-50 rounded-full sm:bg-transparent sm:rounded-none">
           Sign In
         </button>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative overflow-hidden pt-8 sm:pt-0">
         {/* Background Gradients */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-rose-100/50 rounded-full blur-3xl -z-10"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-100/40 rounded-full blur-3xl -z-10"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[800px] h-[300px] sm:h-[800px] bg-rose-100/50 rounded-full blur-3xl -z-10"></div>
+        <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-orange-100/40 rounded-full blur-3xl -z-10"></div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-xs font-bold uppercase tracking-wider mb-8 border border-rose-100">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-6 sm:mb-8 border border-rose-100">
            <Zap className="w-3 h-3" />
-           New: Undetectable by Turnitin & Originality.ai
+           New: Undetectable by Turnitin
         </div>
 
-        <h1 className="text-5xl sm:text-7xl font-extrabold text-slate-900 tracking-tight mb-6 max-w-4xl leading-[1.1]">
-          Make AI Text <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-orange-600">100% Human</span>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-4 sm:mb-6 max-w-4xl leading-[1.1]">
+          Make AI Text <br className="hidden sm:block" /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-orange-600">100% Human</span>
         </h1>
         
-        <p className="text-xl text-slate-500 max-w-2xl mb-10 leading-relaxed">
+        <p className="text-base sm:text-xl text-slate-500 max-w-2xl mb-8 sm:mb-10 leading-relaxed px-2">
           The advanced humanizing engine that transforms robotic AI content into natural, authentic writing with zero detectable AI tone.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0">
           <button 
             onClick={onGetStarted}
-            className="px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold text-lg hover:bg-slate-800 hover:scale-105 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold text-lg hover:bg-slate-800 hover:scale-105 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2"
           >
             Get Started Free <ArrowRight className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 text-left max-w-4xl mx-auto border-t border-slate-100 pt-12">
-           <div className="flex flex-col gap-2">
+        <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 text-left max-w-4xl mx-auto border-t border-slate-100 pt-12 pb-12 w-full px-4">
+           <div className="flex flex-col gap-2 p-4 sm:p-0 bg-slate-50 sm:bg-transparent rounded-xl">
               <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center mb-2">
                  <ShieldCheck className="w-5 h-5 text-rose-600" />
               </div>
               <h3 className="font-bold text-slate-900">Bypass Detectors</h3>
               <p className="text-sm text-slate-500">Beats Turnitin, GPTZero, and Originality.ai with 99% success rate.</p>
            </div>
-           <div className="flex flex-col gap-2">
+           <div className="flex flex-col gap-2 p-4 sm:p-0 bg-slate-50 sm:bg-transparent rounded-xl">
               <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center mb-2">
                  <Sparkles className="w-5 h-5 text-rose-600" />
               </div>
               <h3 className="font-bold text-slate-900">Natural Flow</h3>
               <p className="text-sm text-slate-500">Removes robotic patterns and adds human imperfections.</p>
            </div>
-           <div className="flex flex-col gap-2">
+           <div className="flex flex-col gap-2 p-4 sm:p-0 bg-slate-50 sm:bg-transparent rounded-xl">
               <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center mb-2">
                  <Lock className="w-5 h-5 text-rose-600" />
               </div>
@@ -101,7 +103,7 @@ const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
         </div>
       </main>
 
-      <footer className="py-6 text-center text-slate-400 text-sm border-t border-slate-100 bg-slate-50">
+      <footer className="py-6 text-center text-slate-400 text-xs sm:text-sm border-t border-slate-100 bg-slate-50">
         © 2024 MinihaAI. All rights reserved.
       </footer>
     </div>
@@ -163,7 +165,7 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
             <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Sparkles className="w-8 h-8 text-rose-600" />
             </div>
@@ -287,6 +289,7 @@ const App: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'input' | 'output'>('input');
   
   // Evaluation State
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -358,6 +361,11 @@ const App: React.FC = () => {
 
     setIsProcessing(true);
     setEvalResult(null); 
+    // On mobile, show user processing is happening then switch tab
+    if (window.innerWidth < 1024) {
+      setMobileTab('output');
+    }
+
     try {
       const result = await humanizeText(input, {
         tone,
@@ -381,6 +389,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.error(err);
       alert("Failed to process text. Please try again.");
+      setMobileTab('input'); // Go back if error
     } finally {
       setIsProcessing(false);
     }
@@ -439,6 +448,7 @@ const App: React.FC = () => {
     setView(View.EDITOR);
     if (window.innerWidth < 1024) {
         setIsSidebarOpen(false);
+        setMobileTab('output'); // Show result
     }
   };
 
@@ -447,15 +457,15 @@ const App: React.FC = () => {
   const renderDetector = () => (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 w-full animate-in fade-in duration-500">
         <div className="mb-8 text-center max-w-2xl mx-auto">
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">AI Content Detector</h2>
-            <p className="text-slate-500 text-lg">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">AI Content Detector</h2>
+            <p className="text-slate-500 text-base sm:text-lg">
                 Analyze text patterns to determine if content was written by a human or generated by AI.
             </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-auto lg:h-[600px]">
             {/* Input Side */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow h-[400px] lg:h-auto">
                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Content to Analyze</span>
                      {detectorInput && (
@@ -483,7 +493,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Result Side */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden hover:shadow-md transition-shadow min-h-[400px]">
                 {!detectionResult ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-10 text-center bg-slate-50/20">
                         <div className="bg-slate-50 p-6 rounded-3xl mb-6 shadow-inner">
@@ -497,34 +507,35 @@ const App: React.FC = () => {
                         <div className="text-center mb-8 shrink-0">
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 block">AI Probability</span>
                             <div className="relative inline-flex items-center justify-center mb-4">
-                                <svg className="w-48 h-48 transform -rotate-90 drop-shadow-lg">
+                                <svg className="w-32 h-32 sm:w-48 sm:h-48 transform -rotate-90 drop-shadow-lg">
                                     <circle
                                         className="text-slate-100"
                                         strokeWidth="12"
                                         stroke="currentColor"
                                         fill="transparent"
-                                        r="84"
-                                        cx="96"
-                                        cy="96"
+                                        r="58"
+                                        cx="64"
+                                        cy="64"
+                                        // Mobile sizing hack: svg viewBox scaling would be cleaner but this works for demo
                                     />
+                                    {/* Simplified Circle for mobile responsiveness logic */}
                                     <circle
                                         className={`${detectionResult.score > 60 ? 'text-rose-500' : detectionResult.score > 30 ? 'text-amber-500' : 'text-emerald-500'} transition-all duration-1000 ease-out`}
                                         strokeWidth="12"
-                                        strokeDasharray={527} // 2 * pi * 84
-                                        strokeDashoffset={527 - (527 * detectionResult.score) / 100}
+                                        strokeDasharray={364} // 2 * pi * 58
+                                        strokeDashoffset={364 - (364 * detectionResult.score) / 100}
                                         strokeLinecap="round"
                                         stroke="currentColor"
                                         fill="transparent"
-                                        r="84"
-                                        cx="96"
-                                        cy="96"
+                                        r="58"
+                                        cx="64"
+                                        cy="64"
                                     />
                                 </svg>
-                                <div className="absolute flex flex-col items-center">
-                                    <span className={`text-5xl font-extrabold tracking-tighter ${detectionResult.score > 60 ? 'text-rose-600' : detectionResult.score > 30 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                <div className="absolute flex flex-col items-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                                    <span className={`text-4xl sm:text-5xl font-extrabold tracking-tighter ${detectionResult.score > 60 ? 'text-rose-600' : detectionResult.score > 30 ? 'text-amber-600' : 'text-emerald-600'}`}>
                                         {detectionResult.score}%
                                     </span>
-                                    <span className="text-xs font-bold text-slate-400 uppercase mt-1">Likelihood</span>
                                 </div>
                             </div>
                             <div>
@@ -584,10 +595,28 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
+        
+        {/* Mobile Tab Bar */}
+        <div className="lg:hidden flex border-b border-slate-200 bg-white">
+          <button 
+            onClick={() => setMobileTab('input')}
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors ${mobileTab === 'input' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-500'}`}
+          >
+             <PenLine className="w-4 h-4" /> Source
+          </button>
+          <button 
+            onClick={() => setMobileTab('output')}
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors ${mobileTab === 'output' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-500'}`}
+          >
+             <Sparkles className="w-4 h-4" /> Output
+             {output && <span className="bg-rose-100 text-rose-600 text-[10px] px-1.5 rounded-full">1</span>}
+          </button>
+        </div>
+
         {/* Toolbar */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 z-20 px-4 sm:px-6 py-3 flex flex-col gap-3 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto no-scrollbar">
+        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 z-20 px-3 sm:px-6 py-2 sm:py-3 flex flex-col gap-3 shadow-sm">
+          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0">
               <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="hidden lg:flex p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
@@ -599,11 +628,11 @@ const App: React.FC = () => {
               <div className="h-5 w-px bg-slate-200 hidden lg:block"></div>
 
               {/* Basic Tone Select */}
-              <div className="relative group">
+              <div className="relative group flex-1 sm:flex-none">
                 <select 
                   value={tone}
                   onChange={(e) => setTone(e.target.value as Tone)}
-                  className="appearance-none block w-36 sm:w-40 rounded-lg border-slate-200 text-sm font-medium focus:border-rose-500 focus:ring-rose-500 bg-white py-2 pl-3 pr-8 shadow-sm hover:border-slate-300 transition-colors cursor-pointer text-slate-700"
+                  className="appearance-none block w-full sm:w-40 rounded-lg border-slate-200 text-sm font-medium focus:border-rose-500 focus:ring-rose-500 bg-white py-2 pl-3 pr-8 shadow-sm hover:border-slate-300 transition-colors cursor-pointer text-slate-700 h-10"
                 >
                   {Object.values(Tone).map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -617,7 +646,7 @@ const App: React.FC = () => {
               {/* Advanced Toggle */}
               <button 
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all h-10 ${
                   showAdvanced 
                     ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' 
                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm'
@@ -629,22 +658,22 @@ const App: React.FC = () => {
               </button>
             </div>
             
-            <div className="flex items-center gap-2 ml-auto w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-2 ml-auto w-full lg:w-auto justify-end mt-1 lg:mt-0">
               <Button 
                 variant="ghost" 
                 size="md"
                 onClick={() => { setInput(''); setOutput(''); setEvalResult(null); }}
-                className="text-slate-500 font-normal hidden sm:flex"
+                className="text-slate-500 font-normal hidden sm:flex h-10"
               >
                 <RotateCcw className="w-4 h-4 mr-2" /> Clear
               </Button>
               <Button 
                 onClick={handleHumanize} 
                 isLoading={isProcessing}
-                className="shadow-rose-500/20 w-full sm:w-auto"
+                className="shadow-rose-500/20 w-full sm:w-auto h-10"
               >
                 <Wand2 className="w-4 h-4 mr-2" />
-                Humanize Text
+                Humanize
               </Button>
             </div>
           </div>
@@ -696,10 +725,10 @@ const App: React.FC = () => {
 
         {/* Workspace */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-[600px] max-w-screen-2xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-[500px] lg:min-h-[600px] max-w-screen-2xl mx-auto pb-20 lg:pb-0">
             
             {/* Input Card */}
-            <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 focus-within:ring-2 focus-within:ring-rose-500/20 focus-within:border-rose-200">
+            <div className={`flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 focus-within:ring-2 focus-within:ring-rose-500/20 focus-within:border-rose-200 ${mobileTab === 'input' ? 'flex' : 'hidden lg:flex'}`}>
               <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-2xl">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <Quote className="w-3 h-3" /> Source Text
@@ -710,13 +739,13 @@ const App: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Paste your AI content here to begin transformation..."
-                className="flex-1 w-full p-6 resize-none focus:outline-none text-slate-700 leading-8 placeholder:text-slate-300 rounded-b-2xl text-base bg-transparent"
+                className="flex-1 w-full p-4 sm:p-6 resize-none focus:outline-none text-slate-700 leading-8 placeholder:text-slate-300 rounded-b-2xl text-base bg-transparent"
                 spellCheck={false}
               />
             </div>
 
             {/* Output Card */}
-            <div className={`flex flex-col h-full rounded-2xl border transition-all duration-300 relative overflow-hidden ${output ? 'bg-white border-rose-200 shadow-lg shadow-rose-100/50' : 'bg-slate-100/40 border-slate-200 border-dashed'}`}>
+            <div className={`flex-col h-full rounded-2xl border transition-all duration-300 relative overflow-hidden ${output ? 'bg-white border-rose-200 shadow-lg shadow-rose-100/50' : 'bg-slate-100/40 border-slate-200 border-dashed'} ${mobileTab === 'output' ? 'flex' : 'hidden lg:flex'}`}>
                <div className={`px-5 py-4 border-b flex justify-between items-center rounded-t-2xl ${output ? 'bg-white border-rose-50' : 'bg-transparent border-slate-200'}`}>
                 <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${output ? 'text-rose-600' : 'text-slate-400'}`}>
                   <Sparkles className="w-3 h-3" /> Humanized Output
@@ -725,14 +754,14 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-2">
                      <button
                         onClick={handleEvaluate}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors border border-slate-200 mr-1"
+                        className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors border border-slate-200 mr-1"
                         title="Analyze quality metrics"
                         disabled={isEvaluating}
                      >
                         <BarChart3 className="w-3.5 h-3.5 text-slate-400" />
-                        {isEvaluating ? 'Checking...' : 'Check Quality'}
+                        <span className="hidden sm:inline">{isEvaluating ? 'Checking...' : 'Check Quality'}</span>
                      </button>
-                    <div className="h-4 w-px bg-slate-200 mx-1"></div>
+                    <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block"></div>
                     <button 
                       onClick={handleCopy}
                       className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-700 transition-colors"
@@ -746,13 +775,13 @@ const App: React.FC = () => {
               
               {output ? (
                 <div className="flex-1 flex flex-col overflow-hidden relative">
-                    <div className="flex-1 p-6 overflow-y-auto leading-8 text-slate-800 whitespace-pre-wrap font-medium">
+                    <div className="flex-1 p-4 sm:p-6 overflow-y-auto leading-8 text-slate-800 whitespace-pre-wrap font-medium pb-32 lg:pb-6">
                       {output}
                     </div>
 
                     {/* Quality Report Overlay */}
                     {evalResult && (
-                        <div className="bg-white/95 backdrop-blur border-t border-rose-100 p-5 animate-in slide-in-from-bottom-6 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)]">
+                        <div className="bg-white/95 backdrop-blur border-t border-rose-100 p-4 sm:p-5 animate-in slide-in-from-bottom-6 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] absolute bottom-0 left-0 right-0 max-h-[50%] overflow-y-auto">
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -764,30 +793,30 @@ const App: React.FC = () => {
                                     </button>
                                 </div>
                                 
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center justify-center">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Human Score</span>
-                                        <span className={`font-black text-2xl ${evalResult.humanScore > 85 ? 'text-emerald-500' : evalResult.humanScore > 70 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                                    <div className="bg-slate-50 p-2 sm:p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center justify-center">
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Human Score</span>
+                                        <span className={`font-black text-xl sm:text-2xl ${evalResult.humanScore > 85 ? 'text-emerald-500' : evalResult.humanScore > 70 ? 'text-amber-500' : 'text-rose-500'}`}>
                                             {evalResult.humanScore}
                                         </span>
                                     </div>
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center justify-center">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meaning</span>
+                                    <div className="bg-slate-50 p-2 sm:p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center justify-center">
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Meaning</span>
                                         <div className="flex justify-center items-center h-8">
                                             {evalResult.meaningPreserved ? (
-                                                <div className="flex items-center gap-1 text-emerald-600 font-bold text-sm">
-                                                    <CheckCircle2 className="w-5 h-5" /> Preserved
+                                                <div className="flex items-center gap-1 text-emerald-600 font-bold text-xs sm:text-sm">
+                                                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> Preserved
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-1 text-rose-600 font-bold text-sm">
-                                                    <AlertCircle className="w-5 h-5" /> Changed
+                                                <div className="flex items-center gap-1 text-rose-600 font-bold text-xs sm:text-sm">
+                                                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" /> Changed
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center flex flex-col justify-center">
-                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Variety</span>
-                                         <span className="text-xs font-semibold text-slate-700 leading-tight">
+                                    <div className="bg-slate-50 p-2 sm:p-4 rounded-xl border border-slate-100 text-center flex flex-col justify-center">
+                                         <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Variety</span>
+                                         <span className="text-[10px] sm:text-xs font-semibold text-slate-700 leading-tight">
                                              {evalResult.sentenceVariety}
                                          </span>
                                     </div>

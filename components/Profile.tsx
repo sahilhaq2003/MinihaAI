@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { UserProfile, HistoryItem, Transaction } from '../types';
 import { getBillingHistory } from '../services/authService';
@@ -37,21 +36,21 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
   const wordsSaved = Math.round(totalWords / 5); // Estimate 5 chars per word
   
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Account Settings</h1>
-          <p className="text-slate-500 mt-1">Manage your profile, subscription, and usage.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Account Settings</h1>
+          <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage your profile, subscription, and usage.</p>
         </div>
-        <Button variant="outline" onClick={onLogout} className="text-rose-600 border-rose-100 hover:bg-rose-50">
+        <Button variant="outline" onClick={onLogout} className="text-rose-600 border-rose-100 hover:bg-rose-50 w-full sm:w-auto">
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         
         {/* Left Column: Identity & Actions */}
         <div className="space-y-6">
@@ -181,22 +180,24 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
              {isLoadingBilling ? (
                 <div className="p-8 text-center text-slate-400 text-sm animate-pulse">Loading history...</div>
              ) : transactions.length > 0 ? (
-               <div className="divide-y divide-slate-100">
-                 {transactions.map((item) => (
-                   <div key={item.id} className="p-4 sm:p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                      <div className="flex flex-col">
-                        <span className="text-slate-900 font-medium">{item.date}</span>
-                        <span className="text-slate-500 text-xs">{item.invoice}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-medium text-slate-900">{item.amount}</span>
-                        <span className="px-2 py-1 rounded bg-green-50 text-green-700 text-xs font-bold uppercase">{item.status}</span>
-                        <button className="p-2 text-slate-400 hover:text-slate-700">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
+               <div className="overflow-x-auto">
+                   <div className="divide-y divide-slate-100 min-w-[500px]">
+                     {transactions.map((item) => (
+                       <div key={item.id} className="p-4 sm:p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                          <div className="flex flex-col">
+                            <span className="text-slate-900 font-medium">{item.date}</span>
+                            <span className="text-slate-500 text-xs">{item.invoice}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="font-medium text-slate-900">{item.amount}</span>
+                            <span className="px-2 py-1 rounded bg-green-50 text-green-700 text-xs font-bold uppercase">{item.status}</span>
+                            <button className="p-2 text-slate-400 hover:text-slate-700">
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </div>
+                       </div>
+                     ))}
                    </div>
-                 ))}
                </div>
              ) : (
                <div className="p-8 text-center text-slate-500 text-sm">
@@ -215,7 +216,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                         <span className="font-medium text-slate-900">Password</span>
                         <span className="text-slate-500 text-sm">Last changed 3 months ago</span>
                     </div>
-                    <Button variant="outline" size="sm">Change Password</Button>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">Change Password</Button>
                 </div>
            </div>
 

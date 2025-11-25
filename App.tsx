@@ -3,13 +3,14 @@ import { Header } from './components/Header';
 import { History } from './components/History';
 import { Pricing } from './components/Pricing';
 import { Button } from './components/Button';
+import { Profile } from './components/Profile';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
+import { loginWithGoogle, logoutUser, signupWithEmail, loginWithEmail } from './services/authService';
 import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary } from './types';
 import { 
   Wand2, 
   Copy, 
   RotateCcw, 
-  ThumbsUp, 
   ArrowRightLeft,
   Quote,
   Check,
@@ -22,12 +23,258 @@ import {
   Settings2,
   ChevronDown,
   ChevronUp,
-  AlertCircle
+  AlertCircle,
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  Lock,
+  Mail
 } from 'lucide-react';
+
+declare const google: any;
+
+// --- Landing Page Component ---
+const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) => {
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="py-6 px-4 sm:px-8 max-w-7xl mx-auto w-full flex justify-between items-center">
+        <div className="flex items-center gap-2">
+           <div className="bg-rose-600 p-1.5 rounded-lg">
+            <Sparkles className="w-5 h-5 text-white" />
+           </div>
+           <span className="text-xl font-bold text-slate-900 tracking-tight">MinihaAI</span>
+        </div>
+        <button onClick={onGetStarted} className="text-sm font-medium text-slate-600 hover:text-slate-900">
+          Sign In
+        </button>
+      </header>
+
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative overflow-hidden">
+        {/* Background Gradients */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-rose-100/50 rounded-full blur-3xl -z-10"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-100/40 rounded-full blur-3xl -z-10"></div>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-xs font-bold uppercase tracking-wider mb-8 border border-rose-100">
+           <Zap className="w-3 h-3" />
+           New: Undetectable by Turnitin & Originality.ai
+        </div>
+
+        <h1 className="text-5xl sm:text-7xl font-extrabold text-slate-900 tracking-tight mb-6 max-w-4xl leading-[1.1]">
+          Make AI Text <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-orange-600">100% Human</span>
+        </h1>
+        
+        <p className="text-xl text-slate-500 max-w-2xl mb-10 leading-relaxed">
+          The advanced humanizing engine that transforms robotic AI content into natural, authentic writing with zero detectable AI tone.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <button 
+            onClick={onGetStarted}
+            className="px-8 py-4 bg-slate-900 text-white rounded-xl font-semibold text-lg hover:bg-slate-800 hover:scale-105 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2"
+          >
+            Get Started Free <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 text-left max-w-4xl mx-auto border-t border-slate-100 pt-12">
+           <div className="flex flex-col gap-2">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center mb-2">
+                 <ShieldCheck className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="font-bold text-slate-900">Bypass Detectors</h3>
+              <p className="text-sm text-slate-500">Beats Turnitin, GPTZero, and Originality.ai with 99% success rate.</p>
+           </div>
+           <div className="flex flex-col gap-2">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center mb-2">
+                 <Sparkles className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="font-bold text-slate-900">Natural Flow</h3>
+              <p className="text-sm text-slate-500">Removes robotic patterns and adds human imperfections.</p>
+           </div>
+           <div className="flex flex-col gap-2">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center mb-2">
+                 <Lock className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="font-bold text-slate-900">Secure & Private</h3>
+              <p className="text-sm text-slate-500">Your content is never stored or used for training models.</p>
+           </div>
+        </div>
+      </main>
+
+      <footer className="py-6 text-center text-slate-400 text-sm border-t border-slate-100 bg-slate-50">
+        © 2024 MinihaAI. All rights reserved.
+      </footer>
+    </div>
+  );
+};
+
+// --- Auth Page Component ---
+const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => void }> = ({ onLoginSuccess, onBack }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Clear error when switching modes
+    setError(null);
+    setEmail('');
+    setPassword('');
+  }, [authMode]);
+
+  const handleGoogleAuth = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+        const user = await loginWithGoogle("dummy_token_for_simulation");
+        onLoginSuccess(user);
+    } catch (error) {
+        setError("Google authentication failed. Please try again.");
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async () => {
+    if (!email || !password) {
+        setError("Please fill in all fields.");
+        return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+        let user;
+        if (authMode === 'signup') {
+            user = await signupWithEmail(email, password);
+        } else {
+            user = await loginWithEmail(email, password);
+        }
+        onLoginSuccess(user);
+    } catch (err: any) {
+        setError(err.message || "Authentication failed");
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+        <div className="p-8">
+            <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Sparkles className="w-8 h-8 text-rose-600" />
+            </div>
+            
+            <div className="flex gap-4 border-b border-slate-100 mb-6">
+                <button 
+                    onClick={() => setAuthMode('signup')}
+                    className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'signup' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    Create Account
+                    {authMode === 'signup' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
+                </button>
+                <button 
+                     onClick={() => setAuthMode('login')}
+                    className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'login' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    Log In
+                    {authMode === 'login' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
+                </button>
+            </div>
+
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">
+                {authMode === 'signup' ? 'Get started for free' : 'Welcome back'}
+            </h2>
+            <p className="text-slate-500 mb-8 text-center text-sm">
+                {authMode === 'signup' 
+                    ? 'Join thousands of creators writing undetectable text.' 
+                    : 'Sign in to access your history and saved tones.'}
+            </p>
+
+            <button 
+                onClick={handleGoogleAuth}
+                disabled={isLoading}
+                className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] relative overflow-hidden group mb-4"
+            >
+                {isLoading && !email ? (
+                    <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
+                        <span>Connecting...</span>
+                    </div>
+                ) : (
+                    <>
+                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        Continue with Google
+                    </>
+                )}
+            </button>
+            
+            <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-100"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-slate-400">Or continue with email</span>
+                </div>
+            </div>
+
+            {error && (
+                <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {error}
+                </div>
+            )}
+
+            <div className="space-y-3">
+                <input 
+                    type="email" 
+                    placeholder="Email address" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all" 
+                />
+                <input 
+                    type="password" 
+                    placeholder="Password" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all" 
+                />
+                <Button 
+                    variant="primary" 
+                    className="w-full py-3 text-sm shadow-lg shadow-rose-900/20"
+                    onClick={handleEmailAuth}
+                    isLoading={isLoading && !!email}
+                >
+                    {authMode === 'signup' ? 'Create Account' : 'Log In'}
+                </Button>
+            </div>
+            
+            <div className="mt-6 text-xs text-slate-400 text-center">
+                By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-slate-600">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-600">Privacy Policy</span>.
+            </div>
+        </div>
+        <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
+            <button onClick={onBack} className="text-sm text-slate-500 hover:text-slate-800 font-medium">
+                Back to Home
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   // --- State ---
-  const [view, setView] = useState<View>(View.EDITOR);
+  const [view, setView] = useState<View>(View.LANDING); // Default to Landing
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -49,17 +296,57 @@ const App: React.FC = () => {
   const [detectorInput, setDetectorInput] = useState('');
   const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
   
-  // Simulated User Persistence
+  // User Persistence
   const [userState, setUserState] = useState<UserState>(() => {
     const saved = localStorage.getItem('miniha_user');
-    return saved ? JSON.parse(saved) : { isPremium: false, history: [] };
+    // Default initial state
+    return saved ? JSON.parse(saved) : { 
+        isLoggedIn: false, 
+        isPremium: false, 
+        history: [] 
+    };
   });
 
+  // Sync user state to localStorage
   useEffect(() => {
     localStorage.setItem('miniha_user', JSON.stringify(userState));
   }, [userState]);
 
+  // Initial View Logic
+  useEffect(() => {
+    if (userState.isLoggedIn) {
+        if (view === View.LANDING || view === View.AUTH) {
+            setView(View.EDITOR);
+        }
+    } else {
+        if (view !== View.AUTH) {
+            setView(View.LANDING);
+        }
+    }
+  }, [userState.isLoggedIn]);
+
   // --- Handlers ---
+  const handleLoginSuccess = (userProfile: any) => {
+    setUserState(prev => ({
+        ...prev,
+        isLoggedIn: true,
+        user: userProfile
+    }));
+    setView(View.EDITOR);
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setUserState(prev => ({
+        ...prev,
+        isLoggedIn: false,
+        user: undefined
+    }));
+    setView(View.LANDING);
+    setInput('');
+    setOutput('');
+  };
+
   const handleHumanize = async () => {
     if (!input.trim()) return;
     
@@ -70,7 +357,7 @@ const App: React.FC = () => {
     }
 
     setIsProcessing(true);
-    setEvalResult(null); // Clear previous evaluation
+    setEvalResult(null); 
     try {
       const result = await humanizeText(input, {
         tone,
@@ -89,7 +376,7 @@ const App: React.FC = () => {
 
       setUserState(prev => ({
         ...prev,
-        history: [newItem, ...prev.history].slice(0, 50) // Keep last 50
+        history: [newItem, ...prev.history].slice(0, 50) 
       }));
     } catch (err) {
       console.error(err);
@@ -530,12 +817,21 @@ const App: React.FC = () => {
     </div>
   );
 
+  // --- Main Render Decision ---
+  if (!userState.isLoggedIn) {
+      if (view === View.AUTH) {
+          return <AuthPage onLoginSuccess={handleLoginSuccess} onBack={() => setView(View.LANDING)} />;
+      }
+      return <LandingPage onGetStarted={() => setView(View.AUTH)} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-rose-100 selection:text-rose-900">
       <Header 
         currentView={view} 
         onChangeView={setView} 
         isPremium={userState.isPremium} 
+        onLogout={handleLogout}
       />
       
       <main className="h-[calc(100vh-4rem)]">
@@ -559,6 +855,17 @@ const App: React.FC = () => {
               onSelect={loadHistoryItem}
               onClear={handleClearHistory}
             />
+          </div>
+        )}
+
+        {view === View.PROFILE && userState.user && (
+          <div className="h-full overflow-y-auto bg-slate-50">
+             <Profile 
+                user={userState.user} 
+                history={userState.history}
+                onLogout={handleLogout}
+                onUpgrade={() => setView(View.PRICING)}
+             />
           </div>
         )}
       </main>

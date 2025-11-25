@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Sparkles, User, ScanSearch, Crown } from 'lucide-react';
+import { Sparkles, User, ScanSearch, Crown, LogOut } from 'lucide-react';
 import { View } from '../types';
 import { Button } from './Button';
 
@@ -7,9 +8,10 @@ interface HeaderProps {
   currentView: View;
   onChangeView: (view: View) => void;
   isPremium: boolean;
+  onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, isPremium }) => {
+export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, isPremium, onLogout }) => {
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -72,10 +74,23 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, isPre
 
           <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
-          <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 ring-2 ring-white shadow-sm border border-slate-200">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => onChangeView(View.PROFILE)}
+              className={`w-9 h-9 rounded-full flex items-center justify-center ring-2 shadow-sm border border-slate-200 transition-all ${currentView === View.PROFILE ? 'bg-rose-100 text-rose-600 ring-rose-200' : 'bg-slate-100 text-slate-500 ring-white hover:bg-white'}`}
+              title="My Profile"
+            >
               <User className="w-4 h-4" />
-            </div>
+            </button>
+            {onLogout && (
+                <button 
+                    onClick={onLogout}
+                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    title="Sign Out"
+                >
+                    <LogOut className="w-4 h-4" />
+                </button>
+            )}
           </div>
         </div>
       </div>

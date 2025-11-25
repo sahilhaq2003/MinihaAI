@@ -1,9 +1,12 @@
 
 export enum View {
+  LANDING = 'LANDING',
+  AUTH = 'AUTH',
   EDITOR = 'EDITOR',
   PRICING = 'PRICING',
   HISTORY = 'HISTORY',
-  DETECTOR = 'DETECTOR'
+  DETECTOR = 'DETECTOR',
+  PROFILE = 'PROFILE'
 }
 
 export enum Tone {
@@ -49,7 +52,25 @@ export interface EvaluationResult {
   feedback: string;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  isPremium: boolean;
+}
+
+export interface Transaction {
+  id: string;
+  date: string;
+  amount: string;
+  status: string;
+  invoice: string;
+}
+
 export interface UserState {
+  isLoggedIn: boolean;
+  user?: UserProfile;
   isPremium: boolean;
   history: HistoryItem[];
 }

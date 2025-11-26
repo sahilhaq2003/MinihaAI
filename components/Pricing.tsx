@@ -1,13 +1,39 @@
-import React from 'react';
-import { Check, Star, Zap, Shield, ScanSearch, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Star, Zap, Shield, ScanSearch, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './Button';
+import { processPayment } from '../services/authService';
 
 interface PricingProps {
   onSubscribe: () => void;
   isPremium: boolean;
+  userId?: string;
 }
 
-export const Pricing: React.FC<PricingProps> = ({ onSubscribe, isPremium }) => {
+export const Pricing: React.FC<PricingProps> = ({ onSubscribe, isPremium, userId }) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleUpgrade = async () => {
+    if (!userId) {
+      setError("Please log in to upgrade.");
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const result = await processPayment(userId, "$19.00");
+      if (result.success) {
+        onSubscribe();
+      }
+    } catch (err: any) {
+      setError(err.message || "Payment failed. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="py-16 px-4 max-w-5xl mx-auto">
       <div className="text-center mb-16">
@@ -102,13 +128,20 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, isPremium }) => {
                 </li>
             </ul>
             
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 text-red-400 text-xs rounded-lg text-center">
+                {error}
+              </div>
+            )}
             <Button 
                 variant="primary" 
                 className="w-full py-4 text-base shadow-lg shadow-rose-900/40 border-none bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-500 hover:to-orange-500"
-                onClick={onSubscribe}
-                disabled={isPremium}
+                onClick={handleUpgrade}
+                disabled={isPremium || isProcessing}
             >
-                {isPremium ? 'Active Plan' : 'Get Started with Pro'}
+                {isProcessing ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                ) : isPremium ? 'Active Plan' : 'Get Started with Pro'}
             </Button>
           </div>
         </div>

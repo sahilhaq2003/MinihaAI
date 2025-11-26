@@ -4,11 +4,11 @@ import { UserProfile, Transaction } from "../types";
 // Configuration
 const MOCK_DELAY = 800;
 
-// FOR STATIC DEPLOYMENT: Always false.
-// This ensures the app works without a backend server.
-const USE_REAL_BACKEND = false; 
+// Set to true to use the real SQLite backend server
+const USE_REAL_BACKEND = true; 
 
-const BACKEND_URL = 'http://localhost:3001/api';
+// Use environment variable for production, fallback to localhost for development
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
 
 // Helper for local storage simulation (Fallback)
 const getLocalUsers = () => {
@@ -166,4 +166,50 @@ export const getBillingHistory = async (userId: string): Promise<Transaction[]> 
 export const logoutUser = async (): Promise<void> => {
     // Simulate server-side session cleanup
     return new Promise(resolve => setTimeout(resolve, 500));
+};
+
+// Process payment and upgrade user to premium
+export const processPayment = async (userId: string, amount: string): Promise<{ success: boolean; transaction?: Transaction }> => {
+    if (USE_REAL_BACKEND) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/payment/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, amount })
+            });
+
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || "Payment failed");
+            
+            return { 
+                success: true, 
+                transaction: {
+                    id: data.transaction.id,
+                    date: new Date(data.transaction.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+                    amount: data.transaction.amount,
+                    status: data.transaction.status,
+                    invoice: data.transaction.invoice_id
+                }
+            };
+        } catch (error) {
+            console.error("Payment error:", error);
+            throw error;
+        }
+    }
+
+    // Mock payment for demo
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                success: true,
+                transaction: {
+                    id: 'tx_' + Date.now(),
+                    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+                    amount: amount,
+                    status: 'Paid',
+                    invoice: '#INV-' + Math.floor(Math.random() * 1000000)
+                }
+            });
+        }, 1000);
+    });
 };

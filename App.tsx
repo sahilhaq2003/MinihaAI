@@ -928,7 +928,7 @@ const App = () => {
           <main className="flex-1 bg-slate-50 relative">
              {view === View.EDITOR && renderEditor()}
              {view === View.DETECTOR && renderDetector()}
-             {view === View.PRICING && <Pricing onSubscribe={handleSubscribe} isPremium={userState.isPremium} />}
+             {view === View.PRICING && <Pricing onSubscribe={handleSubscribe} isPremium={userState.isPremium} userId={userState.user?.id} />}
              {view === View.HISTORY && (
                 <div className="h-full bg-white">
                     <History items={userState.history} onSelect={loadHistoryItem} onClear={handleClearHistory} />

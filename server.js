@@ -1,7 +1,7 @@
 /**
  * BACKEND SERVER CODE (Node.js / Express / SQLite)
  * 
- * Dependencies: npm install express cors body-parser google-auth-library sqlite3 dotenv uuid
+ * Dependencies: npm install express cors body-parser google-auth-library sqlite3 dotenv uuid bcryptjs
  * Run: node server.js
  */
 
@@ -15,6 +15,7 @@ const { OAuth2Client } = require('google-auth-library');
 const sqlite3 = require('sqlite3').verbose();
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -188,9 +189,12 @@ app.post('/api/auth/signup', async (req, res) => {
         const picture = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
         const name = email.split('@')[0];
 
+        // Hash password before storing
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         // Create User
         await dbRun(`INSERT INTO users (id, email, password, name, picture, provider, is_premium, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, email, password, name, picture, 'email', 0, new Date().toISOString()]
+            [userId, email, hashedPassword, name, picture, 'email', 0, new Date().toISOString()]
         );
 
         const newUser = await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
@@ -226,8 +230,9 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please login with Google' });
         }
 
-        // Check password (In production use bcrypt.compare)
-        if (user.password !== password) {
+        // Check password using bcrypt
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
              return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
 

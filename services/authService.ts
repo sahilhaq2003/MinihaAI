@@ -174,26 +174,22 @@ export const logoutUser = async (): Promise<void> => {
     return new Promise(resolve => setTimeout(resolve, 500));
 };
 
-// Create Stripe payment session
-export const createPaymentSession = async (userId: string, amount: string): Promise<{ success: boolean; sessionId?: string; url?: string }> => {
+// Process payment (free simulation - no payment processor needed)
+export const processPayment = async (userId: string, amount: string): Promise<{ success: boolean; user?: any; transaction?: Transaction }> => {
     if (USE_REAL_BACKEND) {
         try {
-            const response = await fetch(`${BACKEND_URL}/payment/create-session`, {
+            const response = await fetch(`${BACKEND_URL}/payment/process`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId, amount })
             });
 
             const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Payment session creation failed");
+            if (!data.success) throw new Error(data.message || "Payment processing failed");
             
-            return { 
-                success: true, 
-                sessionId: data.sessionId,
-                url: data.url
-            };
+            return data;
         } catch (error) {
-            console.error("Payment session error:", error);
+            console.error("Payment processing error:", error);
             throw error;
         }
     }
@@ -203,34 +199,19 @@ export const createPaymentSession = async (userId: string, amount: string): Prom
         setTimeout(() => {
             resolve({
                 success: true,
-                sessionId: 'mock_session_' + Date.now(),
-                url: '#'
+                user: { id: userId, isPremium: true },
+                transaction: {
+                    id: 'mock_' + Date.now(),
+                    user_id: userId,
+                    amount: amount,
+                    status: 'Paid',
+                    date: new Date().toISOString(),
+                    invoice_id: '#INV-MOCK',
+                    plan_type: 'Pro Plan'
+                }
             });
-        }, 1000);
+        }, 1500);
     });
-};
-
-// Verify payment after Stripe redirect
-export const verifyPayment = async (sessionId: string): Promise<{ success: boolean; user?: any; transaction?: Transaction }> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/payment/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId })
-            });
-
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Payment verification failed");
-            
-            return data;
-        } catch (error) {
-            console.error("Payment verification error:", error);
-            throw error;
-        }
-    }
-
-    return { success: true };
 };
 
 // Verify email

@@ -421,10 +421,8 @@ const App = () => {
       }
     }
     
-    if (params.get('session_id')) {
-      setView(View.PAYMENT_SUCCESS);
-      return;
-    }
+    // Payment success is now handled directly in Pricing component
+    // No need to check for session_id in URL
   }, []);
 
   // Initial View Logic
@@ -1002,7 +1000,7 @@ const App = () => {
           <main className="flex-1 bg-slate-50 relative">
              {view === View.EDITOR && renderEditor()}
              {view === View.DETECTOR && renderDetector()}
-             {view === View.PRICING && <Pricing onSubscribe={handleSubscribe} isPremium={userState.isPremium} userId={userState.user?.id} />}
+             {view === View.PRICING && <Pricing onSubscribe={handleSubscribe} onPaymentSuccess={handlePaymentSuccess} isPremium={userState.isPremium} userId={userState.user?.id} />}
              {view === View.HISTORY && (
                 <div className="h-full bg-white">
                     <History items={userState.history} onSelect={loadHistoryItem} onClear={handleClearHistory} />

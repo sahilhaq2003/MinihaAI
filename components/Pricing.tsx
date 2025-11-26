@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Check, Star, Zap, Shield, ScanSearch, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './Button';
-import { createPaymentSession } from '../services/authService';
+import { processPayment } from '../services/authService';
 
 interface PricingProps {
   onSubscribe: () => void;
+  onPaymentSuccess?: () => void;
   isPremium: boolean;
   userId?: string;
 }
 
-export const Pricing: React.FC<PricingProps> = ({ onSubscribe, isPremium, userId }) => {
+export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess, isPremium, userId }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleUpgrade = async () => {
     if (!userId) {
@@ -21,14 +23,24 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, isPremium, userId
 
     setIsProcessing(true);
     setError(null);
+    setSuccess(false);
 
     try {
-      const result = await createPaymentSession(userId, "$19.00");
-      if (result.success && result.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = result.url;
+      const result = await processPayment(userId, "$19.00");
+      if (result.success) {
+        // Payment successful - upgrade user
+        setSuccess(true);
+        onSubscribe();
+        // Refresh user data from backend
+        if (onPaymentSuccess) {
+          onPaymentSuccess();
+        }
+        // Show success message for 2 seconds, then redirect
+        setTimeout(() => {
+          setSuccess(false);
+        }, 2000);
       } else {
-        setError("Failed to create payment session. Please try again.");
+        setError("Payment failed. Please try again.");
         setIsProcessing(false);
       }
     } catch (err: any) {
@@ -134,6 +146,11 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, isPremium, userId
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 text-red-400 text-xs rounded-lg text-center">
                 {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 bg-green-500/10 text-green-400 text-xs rounded-lg text-center">
+                ✅ Payment successful! Your account has been upgraded to Pro.
               </div>
             )}
             <Button 

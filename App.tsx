@@ -948,6 +948,12 @@ const App = () => {
                     history={userState.history}
                     onLogout={handleLogout}
                     onUpgrade={() => setView(View.PRICING)}
+                    onUserUpdate={(updatedUser) => {
+                      setUserState(prev => ({
+                        ...prev,
+                        user: updatedUser
+                      }));
+                    }}
                 />
              )}
           </main>

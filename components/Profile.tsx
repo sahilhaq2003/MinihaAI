@@ -1,19 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { UserProfile, HistoryItem, Transaction } from '../types';
 import { getBillingHistory } from '../services/authService';
-import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download } from 'lucide-react';
+import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download, Camera } from 'lucide-react';
 import { Button } from './Button';
+import imageCompression from 'browser-image-compression';
 
 interface ProfileProps {
   user: UserProfile;
   history: HistoryItem[];
   onLogout: () => void;
   onUpgrade: () => void;
+  onUserUpdate?: (updatedUser: UserProfile) => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpgrade }) => {
+export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpgrade, onUserUpdate }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingBilling, setIsLoadingBilling] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadBilling = async () => {
@@ -34,6 +39,97 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
   const totalGenerations = history.length;
   const totalWords = history.reduce((acc, item) => acc + item.humanized.length, 0);
   const wordsSaved = Math.round(totalWords / 5); // Estimate 5 chars per word
+
+  // Handle photo upload
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB before compression)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    setUploadError(null);
+
+    try {
+      // Compress image to low quality
+      const options = {
+        maxSizeMB: 0.2, // Target 200KB max
+        maxWidthOrHeight: 400, // Resize to max 400px
+        useWebWorker: true,
+        quality: 0.4, // Low quality (0.4 = 40% quality)
+        fileType: 'image/jpeg' // Convert to JPEG for better compression
+      };
+
+      const compressedFile = await imageCompression(file, options);
+      
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        
+        try {
+          // Send to backend
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
+          const response = await fetch(`${backendUrl}/user/${user.id}/photo`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ photo: base64String }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Update user state in parent component
+            if (onUserUpdate && data.user) {
+              onUserUpdate(data.user);
+            } else {
+              // Fallback: fetch updated user data
+              const userResponse = await fetch(`${backendUrl}/user/${user.id}`);
+              const userData = await userResponse.json();
+              if (userData.success && onUserUpdate) {
+                onUserUpdate(userData.user);
+              }
+            }
+            setUploadError(null);
+          } else {
+            setUploadError(data.message || 'Failed to upload photo');
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          setUploadError('Failed to upload photo. Please try again.');
+        } finally {
+          setIsUploadingPhoto(false);
+          // Reset file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }
+      };
+
+      reader.onerror = () => {
+        setUploadError('Failed to read image file');
+        setIsUploadingPhoto(false);
+      };
+
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error('Compression error:', error);
+      setUploadError('Failed to process image. Please try again.');
+      setIsUploadingPhoto(false);
+    }
+  };
   
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -58,15 +154,41 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
              <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-slate-800 to-slate-900"></div>
              <div className="relative mt-8 flex flex-col items-center text-center">
-                <div className="w-24 h-24 rounded-full border-4 border-white shadow-md bg-white overflow-hidden mb-4">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-                      <User className="w-10 h-10" />
-                    </div>
-                  )}
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-md bg-white overflow-hidden mb-4">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <User className="w-10 h-10" />
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingPhoto}
+                    className="absolute bottom-0 right-0 w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Upload profile photo"
+                  >
+                    {isUploadingPhoto ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
                 </div>
+                {uploadError && (
+                  <div className="mb-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                    {uploadError}
+                  </div>
+                )}
                 <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
                 <div className="flex items-center gap-2 text-slate-500 text-sm mt-1 mb-4">
                   <Mail className="w-3 h-3" /> {user.email}

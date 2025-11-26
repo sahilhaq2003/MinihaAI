@@ -22,6 +22,7 @@ export const VerifyEmail: React.FC<VerifyEmailProps> = ({ onBack }) => {
     
     setToken(urlToken);
     setEmail(urlEmail);
+  }, []);
 
   useEffect(() => {
     if (!token || !email) {
@@ -45,7 +46,7 @@ export const VerifyEmail: React.FC<VerifyEmailProps> = ({ onBack }) => {
     };
 
     verify();
-  }, [token, email, navigate]);
+  }, [token, email, onBack]);
 
   const handleResend = async () => {
     if (!email) return;

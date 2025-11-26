@@ -305,17 +305,9 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  apiKey: string;
-  onSaveKey: (key: string) => void;
 }
 
-const SettingsModal = ({ isOpen, onClose, apiKey, onSaveKey }: SettingsModalProps) => {
-    const [tempKey, setTempKey] = useState(apiKey);
-    
-    useEffect(() => {
-        if(isOpen) setTempKey(apiKey);
-    }, [isOpen, apiKey]);
-
+const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     if (!isOpen) return null;
 
     return (
@@ -331,26 +323,22 @@ const SettingsModal = ({ isOpen, onClose, apiKey, onSaveKey }: SettingsModalProp
                 </div>
                 
                 <div className="mb-6">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Google Gemini API Key</label>
-                    <p className="text-xs text-slate-500 mb-3">
-                        This app runs entirely in your browser. We do not have a backend server for this deployment. 
-                        Please enter your own API Key to enable the AI features.
-                    </p>
-                    <input 
-                        type="password" 
-                        value={tempKey}
-                        onChange={(e) => setTempKey(e.target.value)}
-                        placeholder="AIzaSy..."
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono"
-                    />
-                    <div className="mt-2 text-xs text-rose-600 flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Your key is stored locally in your browser.
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <div className="flex items-start gap-3">
+                            <Lock className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <h4 className="font-semibold text-green-900 mb-1">API Key Secured</h4>
+                                <p className="text-sm text-green-700">
+                                    Your Gemini API key is securely stored on our backend server. 
+                                    You don't need to enter it manually. All AI features work automatically!
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3">
-                    <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                    <Button onClick={() => { onSaveKey(tempKey); onClose(); }}>Save Key</Button>
+                <div className="flex justify-end">
+                    <Button onClick={onClose}>Close</Button>
                 </div>
             </div>
         </div>
@@ -370,9 +358,7 @@ const App = () => {
   const [vocabulary, setVocabulary] = useState<Vocabulary>(Vocabulary.STANDARD);
   const [intensity, setIntensity] = useState<number>(50);
   
-  // API Key State - Read from environment variable (secured)
-  const [apiKey, setApiKey] = useState(() => import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('miniha_api_key') || '');
-  const [showSettings, setShowSettings] = useState(false);
+  // API Key is now handled securely on the backend - no need for client-side storage
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -400,10 +386,6 @@ const App = () => {
     localStorage.setItem('miniha_user', JSON.stringify(userState));
   }, [userState]);
 
-  const handleSaveApiKey = (key: string) => {
-      setApiKey(key);
-      localStorage.setItem('miniha_api_key', key);
-  };
 
   // Check URL parameters on mount
   useEffect(() => {
@@ -478,8 +460,7 @@ const App = () => {
       const result = await humanizeText(input, {
         tone,
         vocabulary,
-        intensity,
-        apiKey // Pass key
+        intensity
       });
       setOutput(result);
       
@@ -508,7 +489,7 @@ const App = () => {
     if (!input || !output) return;
     setIsEvaluating(true);
     try {
-      const result = await evaluateQuality(input, output, apiKey);
+      const result = await evaluateQuality(input, output);
       setEvalResult(result);
     } catch (err: any) {
       console.error(err);
@@ -522,7 +503,7 @@ const App = () => {
     if (!detectorInput.trim()) return;
     setIsProcessing(true);
     try {
-        const result = await detectAIContent(detectorInput, apiKey);
+        const result = await detectAIContent(detectorInput);
         setDetectionResult(result);
     } catch (err: any) {
       console.error(err);

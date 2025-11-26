@@ -94,3 +94,4 @@ All other configuration (API keys, database, etc.) is on the backend (Railway).
 
 If you get a new Railway URL, just update the `VITE_BACKEND_URL` value in Vercel and redeploy.
 
+

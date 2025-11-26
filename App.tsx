@@ -932,6 +932,7 @@ const App = () => {
             onChangeView={setView} 
             isPremium={userState.isPremium} 
             onLogout={handleLogout}
+            user={userState.user}
           />
           <main className="flex-1 bg-slate-50 relative">
              {view === View.EDITOR && renderEditor()}

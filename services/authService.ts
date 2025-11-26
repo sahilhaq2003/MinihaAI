@@ -109,6 +109,12 @@ export const loginWithEmail = async (email: string, password: string): Promise<U
             });
 
             const data = await response.json();
+            
+            // Handle email verification required
+            if (response.status === 403 && data.requiresVerification) {
+                throw new Error(data.message || "Please verify your email address before logging in.");
+            }
+            
             if (!data.success) throw new Error(data.message || "Login failed");
             return data.user;
         } catch (error) {
@@ -168,48 +174,137 @@ export const logoutUser = async (): Promise<void> => {
     return new Promise(resolve => setTimeout(resolve, 500));
 };
 
-// Process payment and upgrade user to premium
-export const processPayment = async (userId: string, amount: string): Promise<{ success: boolean; transaction?: Transaction }> => {
+// Create Stripe payment session
+export const createPaymentSession = async (userId: string, amount: string): Promise<{ success: boolean; sessionId?: string; url?: string }> => {
     if (USE_REAL_BACKEND) {
         try {
-            const response = await fetch(`${BACKEND_URL}/payment/create`, {
+            const response = await fetch(`${BACKEND_URL}/payment/create-session`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId, amount })
             });
 
             const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Payment failed");
+            if (!data.success) throw new Error(data.message || "Payment session creation failed");
             
             return { 
                 success: true, 
-                transaction: {
-                    id: data.transaction.id,
-                    date: new Date(data.transaction.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-                    amount: data.transaction.amount,
-                    status: data.transaction.status,
-                    invoice: data.transaction.invoice_id
-                }
+                sessionId: data.sessionId,
+                url: data.url
             };
         } catch (error) {
-            console.error("Payment error:", error);
+            console.error("Payment session error:", error);
             throw error;
         }
     }
 
-    // Mock payment for demo
+    // Mock for demo
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve({
                 success: true,
-                transaction: {
-                    id: 'tx_' + Date.now(),
-                    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-                    amount: amount,
-                    status: 'Paid',
-                    invoice: '#INV-' + Math.floor(Math.random() * 1000000)
-                }
+                sessionId: 'mock_session_' + Date.now(),
+                url: '#'
             });
         }, 1000);
     });
+};
+
+// Verify payment after Stripe redirect
+export const verifyPayment = async (sessionId: string): Promise<{ success: boolean; user?: any; transaction?: Transaction }> => {
+    if (USE_REAL_BACKEND) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/payment/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId })
+            });
+
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || "Payment verification failed");
+            
+            return data;
+        } catch (error) {
+            console.error("Payment verification error:", error);
+            throw error;
+        }
+    }
+
+    return { success: true };
+};
+
+// Verify email
+export const verifyEmail = async (token: string, email: string): Promise<{ success: boolean; message: string }> => {
+    if (USE_REAL_BACKEND) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`);
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || "Email verification failed");
+            return data;
+        } catch (error) {
+            console.error("Email verification error:", error);
+            throw error;
+        }
+    }
+    return { success: true, message: "Email verified" };
+};
+
+// Resend verification email
+export const resendVerificationEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
+    if (USE_REAL_BACKEND) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/auth/resend-verification`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || "Failed to resend verification email");
+            return data;
+        } catch (error) {
+            console.error("Resend verification error:", error);
+            throw error;
+        }
+    }
+    return { success: true, message: "Verification email sent" };
+};
+
+// Request password reset
+export const forgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    if (USE_REAL_BACKEND) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || "Failed to send reset email");
+            return data;
+        } catch (error) {
+            console.error("Forgot password error:", error);
+            throw error;
+        }
+    }
+    return { success: true, message: "Reset email sent" };
+};
+
+// Reset password with token
+export const resetPassword = async (token: string, email: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    if (USE_REAL_BACKEND) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, email, newPassword })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || "Password reset failed");
+            return data;
+        } catch (error) {
+            console.error("Reset password error:", error);
+            throw error;
+        }
+    }
+    return { success: true, message: "Password reset successful" };
 };

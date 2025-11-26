@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Star, Zap, Shield, ScanSearch, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './Button';
-import { processPayment } from '../services/authService';
+import { createPaymentSession } from '../services/authService';
 
 interface PricingProps {
   onSubscribe: () => void;
@@ -23,13 +23,16 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, isPremium, userId
     setError(null);
 
     try {
-      const result = await processPayment(userId, "$19.00");
-      if (result.success) {
-        onSubscribe();
+      const result = await createPaymentSession(userId, "$19.00");
+      if (result.success && result.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = result.url;
+      } else {
+        setError("Failed to create payment session. Please try again.");
+        setIsProcessing(false);
       }
     } catch (err: any) {
       setError(err.message || "Payment failed. Please try again.");
-    } finally {
       setIsProcessing(false);
     }
   };

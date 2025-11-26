@@ -4,6 +4,9 @@ import { History } from './components/History';
 import { Pricing } from './components/Pricing';
 import { Button } from './components/Button';
 import { Profile } from './components/Profile';
+import { VerifyEmail } from './components/VerifyEmail';
+import { ResetPassword } from './components/ResetPassword';
+import { PaymentSuccess } from './components/PaymentSuccess';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
 import { loginWithGoogle, logoutUser, signupWithEmail, loginWithEmail } from './services/authService';
 import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary } from './types';
@@ -112,7 +115,7 @@ const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
 };
 
 // --- Auth Page Component ---
-const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => void }> = ({ onLoginSuccess, onBack }) => {
+const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => void; onForgotPassword: () => void }> = ({ onLoginSuccess, onBack, onForgotPassword }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
   const [email, setEmail] = useState('');
@@ -152,12 +155,22 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
         let user;
         if (authMode === 'signup') {
             user = await signupWithEmail(email, password);
+            // Show success message about email verification
+            if (user && !user.emailVerified) {
+                setError(null);
+                // Success message will be shown via the signup response
+            }
         } else {
             user = await loginWithEmail(email, password);
         }
         onLoginSuccess(user);
     } catch (err: any) {
-        setError(err.message || "Authentication failed");
+        // Check if it's an email verification error
+        if (err.message && err.message.includes('verify your email')) {
+            setError(err.message + ' Click "Resend" below to get a new verification email.');
+        } else {
+            setError(err.message || "Authentication failed");
+        }
     } finally {
         setIsLoading(false);
     }
@@ -259,6 +272,16 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
                 >
                     {authMode === 'signup' ? 'Create Account' : 'Log In'}
                 </Button>
+                
+                {authMode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={onForgotPassword}
+                    className="w-full mt-3 text-sm text-rose-600 hover:text-rose-700 font-medium"
+                  >
+                    Forgot password?
+                  </button>
+                )}
             </div>
             
             <div className="mt-6 text-xs text-slate-400 text-center">
@@ -382,6 +405,28 @@ const App = () => {
       localStorage.setItem('miniha_api_key', key);
   };
 
+  // Check URL parameters on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (params.get('token') && params.get('email')) {
+      const path = window.location.pathname;
+      if (path.includes('verify-email') || params.get('verify')) {
+        setView(View.VERIFY_EMAIL);
+        return;
+      }
+      if (path.includes('reset-password') || params.get('reset')) {
+        setView(View.RESET_PASSWORD);
+        return;
+      }
+    }
+    
+    if (params.get('session_id')) {
+      setView(View.PAYMENT_SUCCESS);
+      return;
+    }
+  }, []);
+
   // Initial View Logic
   useEffect(() => {
     if (userState.isLoggedIn) {
@@ -389,11 +434,11 @@ const App = () => {
             setView(View.EDITOR);
         }
     } else {
-        if (view !== View.AUTH) {
+        if (view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD) {
             setView(View.LANDING);
         }
     }
-  }, [userState.isLoggedIn]);
+  }, [userState.isLoggedIn, view]);
 
   // --- Handlers ---
   const handleLoginSuccess = (userProfile: any) => {
@@ -497,9 +542,32 @@ const App = () => {
   };
 
   const handleSubscribe = () => {
-    setUserState(prev => ({ ...prev, isPremium: true }));
+    setUserState(prev => ({ 
+      ...prev, 
+      isPremium: true,
+      user: prev.user ? { ...prev.user, isPremium: true } : prev.user
+    }));
     setView(View.EDITOR);
-    alert("Welcome to MinihaAI Premium!");
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Refresh user data from backend
+    if (userState.user?.id) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api'}/user/${userState.user.id}`);
+        const data = await response.json();
+        if (data.success) {
+          setUserState(prev => ({
+            ...prev,
+            isPremium: data.user.isPremium,
+            user: { ...prev.user!, ...data.user }
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to refresh user data:', error);
+      }
+    }
+    handleSubscribe();
   };
 
   const handleClearHistory = () => {
@@ -915,9 +983,15 @@ const App = () => {
        {/* Conditional Rendering for Views */}
        {view === View.LANDING && <LandingPage onGetStarted={() => setView(View.AUTH)} />}
 
-       {view === View.AUTH && <AuthPage onLoginSuccess={handleLoginSuccess} onBack={() => setView(View.LANDING)} />}
+       {view === View.AUTH && <AuthPage onLoginSuccess={handleLoginSuccess} onBack={() => setView(View.LANDING)} onForgotPassword={() => setView(View.RESET_PASSWORD)} />}
+       
+       {view === View.VERIFY_EMAIL && <VerifyEmail onBack={() => setView(View.LANDING)} />}
+       
+       {view === View.RESET_PASSWORD && <ResetPassword onBack={() => setView(View.AUTH)} />}
+       
+       {view === View.PAYMENT_SUCCESS && <PaymentSuccess onPaymentSuccess={handlePaymentSuccess} onBack={() => setView(View.EDITOR)} />}
 
-       {(view !== View.LANDING && view !== View.AUTH) && (
+       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS) && (
         <>
           <Header 
             currentView={view} 

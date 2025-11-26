@@ -47,7 +47,7 @@ abcdefghijklmnop
 
 ### Variable 4: `FRONTEND_URL`
 ```
-https://minihaai.netlify.app
+https://minihaai.vercel.app
 ```
 
 ---
@@ -61,7 +61,7 @@ Here's what your Railway Variables should look like:
 | `EMAIL_SERVICE` | `gmail` | `gmail` |
 | `EMAIL_USER` | `sahilhaq2003@gmail.com` | **Your Gmail** |
 | `EMAIL_PASSWORD` | `abcdefghijklmnop` | **Your App Password** |
-| `FRONTEND_URL` | `https://minihaai.netlify.app` | `https://minihaai.netlify.app` |
+| `FRONTEND_URL` | `https://minihaai.vercel.app` | `https://minihaai.vercel.app` |
 
 ---
 
@@ -129,7 +129,7 @@ After adding variables:
 - [ ] `EMAIL_SERVICE` = `gmail` (added to Railway)
 - [ ] `EMAIL_USER` = your Gmail address (added to Railway)
 - [ ] `EMAIL_PASSWORD` = 16-char App Password (added to Railway)
-- [ ] `FRONTEND_URL` = `https://minihaai.netlify.app` (added to Railway)
+- [ ] `FRONTEND_URL` = `https://minihaai.vercel.app` (added to Railway)
 - [ ] Railway redeployed successfully
 - [ ] Tested email verification
 

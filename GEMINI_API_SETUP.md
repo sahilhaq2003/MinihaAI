@@ -58,7 +58,7 @@ Make sure you have all these variables set:
 | `EMAIL_SERVICE` | `gmail` | ⚠️ Add if using email |
 | `EMAIL_USER` | `your-email@gmail.com` | ⚠️ Add if using email |
 | `EMAIL_PASSWORD` | `your-app-password` | ⚠️ Add if using email |
-| `FRONTEND_URL` | `https://minihaai.netlify.app` | ⚠️ Add if using email |
+| `FRONTEND_URL` | `https://minihaai.vercel.app` | ⚠️ Add if using email |
 
 ---
 
@@ -66,7 +66,7 @@ Make sure you have all these variables set:
 
 After Railway deploys:
 
-1. Go to your app: `https://minihaai.netlify.app`
+1. Go to your app: `https://minihaai.vercel.app`
 2. Try humanizing some text
 3. Should work without any API key errors!
 4. No more 403 errors ✅

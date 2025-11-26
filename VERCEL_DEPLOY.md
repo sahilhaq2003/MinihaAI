@@ -62,33 +62,12 @@ If your backend has `FRONTEND_URL` environment variable:
 
 ---
 
-## 📋 Vercel vs Netlify
-
-### Vercel Advantages:
-- ✅ Faster builds
-- ✅ Better performance
-- ✅ Automatic HTTPS
-- ✅ Easy GitHub integration
-- ✅ Free tier is generous
-
-### Both Support:
-- ✅ Environment variables
-- ✅ Custom domains
-- ✅ Automatic deployments
-- ✅ Preview deployments
-
----
-
 ## 🔧 Configuration Files
 
 ### `vercel.json` (Already created)
 - Handles routing (SPA redirects)
 - Configures build settings
 - Sets up rewrites for React Router
-
-### `netlify.toml` (Can keep or remove)
-- Only needed for Netlify
-- Won't affect Vercel deployment
 
 ---
 

@@ -1,7 +1,33 @@
 import React from 'react';
-import { Sparkles, User, ScanSearch, Crown, LogOut, Clock } from 'lucide-react';
+import { User, ScanSearch, Crown, LogOut, Clock } from 'lucide-react';
 import { View, UserProfile } from '../types';
 import { Button } from './Button';
+
+// Custom MinihaAI Logo Component
+const MinihaAILogo: React.FC<{ className?: string }> = ({ className = "w-4 h-4 sm:w-5 sm:h-5" }) => {
+  return (
+    <svg 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      {/* Four-pointed star in center */}
+      <path 
+        d="M12 6L13.5 10.5L18 12L13.5 13.5L12 18L10.5 13.5L6 12L10.5 10.5L12 6Z" 
+        stroke="white" 
+        strokeWidth="1.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Dot above-right */}
+      <circle cx="16" cy="8" r="1.5" fill="white" />
+      {/* Dot below-left */}
+      <circle cx="8" cy="16" r="1.5" fill="white" />
+    </svg>
+  );
+};
 
 interface HeaderProps {
   currentView: View;
@@ -19,8 +45,8 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, isPre
           className="flex items-center gap-2 sm:gap-3 cursor-pointer group" 
           onClick={() => onChangeView(View.EDITOR)}
         >
-          <div className="bg-gradient-to-br from-rose-500 to-orange-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl shadow-lg shadow-rose-500/20 group-hover:shadow-rose-500/30 transition-all duration-300">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <div className="bg-gradient-to-br from-rose-500 to-orange-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl shadow-lg shadow-rose-500/20 group-hover:shadow-rose-500/30 transition-all duration-300 flex items-center justify-center">
+            <MinihaAILogo />
           </div>
           <span className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight block">
             MinihaAI

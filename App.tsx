@@ -39,14 +39,40 @@ import {
 
 declare const google: any;
 
+// Custom MinihaAI Logo Component
+const MinihaAILogo: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => {
+  return (
+    <svg 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      {/* Four-pointed star in center */}
+      <path 
+        d="M12 6L13.5 10.5L18 12L13.5 13.5L12 18L10.5 13.5L6 12L10.5 10.5L12 6Z" 
+        stroke="white" 
+        strokeWidth="1.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Dot above-right */}
+      <circle cx="16" cy="8" r="1.5" fill="white" />
+      {/* Dot below-left */}
+      <circle cx="8" cy="16" r="1.5" fill="white" />
+    </svg>
+  );
+};
+
 // --- Landing Page Component ---
 const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="py-4 px-4 sm:px-8 max-w-7xl mx-auto w-full flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md z-10 border-b border-slate-50 sm:border-none sm:static">
         <div className="flex items-center gap-2">
-           <div className="bg-rose-600 p-1.5 rounded-lg">
-            <Sparkles className="w-5 h-5 text-white" />
+           <div className="bg-gradient-to-br from-rose-500 to-orange-600 p-1.5 rounded-lg flex items-center justify-center">
+            <MinihaAILogo />
            </div>
            <span className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">MinihaAI</span>
         </div>

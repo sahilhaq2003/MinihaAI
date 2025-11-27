@@ -9,7 +9,6 @@ import { ResetPassword } from './components/ResetPassword';
 import { PaymentSuccess } from './components/PaymentSuccess';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsConditions } from './components/TermsConditions';
-import { ReturnPolicy } from './components/ReturnPolicy';
 import { AdminDashboard } from './components/AdminDashboard';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
 import { logoutUser, signupWithEmail, loginWithEmail } from './services/authService';
@@ -143,9 +142,6 @@ const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
               </button>
               <button onClick={() => setView(View.TERMS_CONDITIONS)} className="text-slate-500 hover:text-slate-700 transition-colors">
                 Terms & Conditions
-              </button>
-              <button onClick={() => setView(View.RETURN_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
-                Return Policy
               </button>
             </div>
           </div>
@@ -1141,10 +1137,9 @@ const App = () => {
 
        {view === View.PRIVACY_POLICY && <PrivacyPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.TERMS_CONDITIONS && <TermsConditions onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
-       {view === View.RETURN_POLICY && <ReturnPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.ADMIN_DASHBOARD && <AdminDashboard onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
 
-       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.RETURN_POLICY && view !== View.ADMIN_DASHBOARD) && (
+       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.ADMIN_DASHBOARD) && (
         <>
           <Header 
             currentView={view} 
@@ -1194,9 +1189,6 @@ const App = () => {
                   </button>
                   <button onClick={() => setView(View.TERMS_CONDITIONS)} className="text-slate-500 hover:text-slate-700 transition-colors">
                     Terms & Conditions
-                  </button>
-                  <button onClick={() => setView(View.RETURN_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
-                    Return Policy
                   </button>
                 </div>
               </div>

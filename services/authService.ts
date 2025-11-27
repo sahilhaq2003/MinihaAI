@@ -217,34 +217,54 @@ export const resendVerificationEmail = async (email: string): Promise<{ success:
     return { success: true, message: "Verification email sent" };
 };
 
-// Request password reset
-export const forgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+// Request OTP via mobile number
+export const forgotPassword = async (email: string, mobileNumber: string): Promise<{ success: boolean; message: string; otpCode?: string }> => {
     if (USE_REAL_BACKEND) {
         try {
             const response = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email, mobileNumber })
             });
             const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Failed to send reset email");
+            if (!data.success) throw new Error(data.message || "Failed to send OTP");
             return data;
         } catch (error) {
             console.error("Forgot password error:", error);
             throw error;
         }
     }
-    return { success: true, message: "Reset email sent" };
+    return { success: true, message: "OTP sent" };
+};
+
+// Verify OTP
+export const verifyOTP = async (email: string, otpCode: string): Promise<{ success: boolean; message: string; resetToken?: string }> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otpCode })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "OTP verification failed");
+      return data;
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      throw error;
+    }
+  }
+  return { success: true, message: "OTP verified", resetToken: "mock_token" };
 };
 
 // Reset password with token
-export const resetPassword = async (token: string, email: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+export const resetPassword = async (token: string, email: string, newPassword: string, confirmPassword: string): Promise<{ success: boolean; message: string }> => {
   if (USE_REAL_BACKEND) {
     try {
       const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, email, newPassword })
+        body: JSON.stringify({ token, email, newPassword, confirmPassword })
       });
       const data = await response.json();
       if (!data.success) throw new Error(data.message || "Password reset failed");

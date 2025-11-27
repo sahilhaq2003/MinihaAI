@@ -272,20 +272,39 @@ export const forgotPassword = async (email: string): Promise<{ success: boolean;
 
 // Reset password with token
 export const resetPassword = async (token: string, email: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, email, newPassword })
-            });
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Password reset failed");
-            return data;
-        } catch (error) {
-            console.error("Reset password error:", error);
-            throw error;
-        }
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, email, newPassword })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Password reset failed");
+      return data;
+    } catch (error) {
+      console.error("Reset password error:", error);
+      throw error;
     }
-    return { success: true, message: "Password reset successful" };
+  }
+  return { success: true, message: "Password reset successful" };
+};
+
+// Delete user account
+export const deleteAccount = async (userId: string): Promise<{ success: boolean; message: string }> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/user/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Account deletion failed");
+      return data;
+    } catch (error: any) {
+      console.error("Delete account error:", error);
+      throw new Error(error.message || "Failed to delete account. Please try again.");
+    }
+  }
+  return { success: true, message: "Account deleted successfully" };
 };

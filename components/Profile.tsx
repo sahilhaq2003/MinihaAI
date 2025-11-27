@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { UserProfile, HistoryItem, Transaction } from '../types';
 import { getBillingHistory } from '../services/authService';
-import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download, Camera, ShieldCheck } from 'lucide-react';
+import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download, Camera, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from './Button';
 import imageCompression from 'browser-image-compression';
+import { DeleteAccountModal } from './DeleteAccountModal';
+import { deleteAccount } from '../services/authService';
 
 interface ProfileProps {
   user: UserProfile;
@@ -19,6 +21,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
   const [isLoadingBilling, setIsLoadingBilling] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -366,6 +369,40 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                 </div>
            </div>
            )}
+
+           {/* Delete Account */}
+           <div className="bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden p-6">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
+                   <Trash2 className="w-5 h-5 text-red-500" /> Danger Zone
+                </h3>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+                    <div className="flex flex-col">
+                        <span className="font-medium text-slate-900">Delete Account</span>
+                        <span className="text-slate-500 text-sm">Permanently delete your account and all associated data</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full sm:w-auto border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Account
+                    </Button>
+                </div>
+           </div>
+
+           {/* Delete Account Modal */}
+           <DeleteAccountModal
+             isOpen={showDeleteModal}
+             onClose={() => setShowDeleteModal(false)}
+             onConfirm={async () => {
+               await deleteAccount(user.id);
+               setShowDeleteModal(false);
+               onLogout();
+             }}
+             userEmail={user.email}
+           />
 
         </div>
       </div>

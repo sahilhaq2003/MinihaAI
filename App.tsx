@@ -801,12 +801,15 @@ const App = () => {
                       </div>
                       {!userState.isPremium && userState.dailyUsage && (
                         <div className="mb-3 text-center">
-                          <span className="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 inline-block">
-                            {userState.dailyUsage.detections}/3 detections used today
-                            {userState.dailyUsage.detections >= 3 && (
-                              <span className="ml-2 text-rose-600 font-semibold">• Limit reached</span>
-                            )}
-                          </span>
+                          {userState.dailyUsage.detections >= 3 ? (
+                            <span className="text-xs text-rose-600 font-medium bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 inline-block">
+                              Daily limit reached (0 remaining)
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 inline-block">
+                              {3 - userState.dailyUsage.detections} remaining ({userState.dailyUsage.detections}/3 used)
+                            </span>
+                          )}
                         </div>
                       )}
                       <Button 

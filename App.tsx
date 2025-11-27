@@ -189,15 +189,16 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
         let user;
         if (authMode === 'signup') {
             user = await signupWithEmail(email, password);
-            // Show success message about email verification
-            if (user && !user.emailVerified) {
-                setError(null);
-                // Success message will be shown via the signup response
+            // After successful signup, automatically log the user in
+            if (user) {
+                // User is automatically logged in after account creation
+                onLoginSuccess(user);
+                return; // Exit early after successful signup and login
             }
         } else {
             user = await loginWithEmail(email, password);
+            onLoginSuccess(user);
         }
-        onLoginSuccess(user);
     } catch (err: any) {
         // Check if it's an email verification error
         if (err.message && err.message.includes('verify your email')) {
@@ -466,6 +467,7 @@ const App = () => {
     setUserState(prev => ({
         ...prev,
         isLoggedIn: true,
+        isPremium: userProfile?.isPremium || false,
         user: userProfile
     }));
     setView(View.EDITOR);

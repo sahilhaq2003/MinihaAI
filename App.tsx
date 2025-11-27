@@ -11,6 +11,7 @@ import { RefundPolicy } from './components/RefundPolicy';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsConditions } from './components/TermsConditions';
 import { ReturnPolicy } from './components/ReturnPolicy';
+import { AdminDashboard } from './components/AdminDashboard';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
 import { logoutUser, signupWithEmail, loginWithEmail } from './services/authService';
 import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary } from './types';
@@ -1108,8 +1109,9 @@ const App = () => {
        {view === View.PRIVACY_POLICY && <PrivacyPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.TERMS_CONDITIONS && <TermsConditions onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.RETURN_POLICY && <ReturnPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
+       {view === View.ADMIN_DASHBOARD && <AdminDashboard onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
 
-       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.REFUND_POLICY && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.RETURN_POLICY) && (
+       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.REFUND_POLICY && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.RETURN_POLICY && view !== View.ADMIN_DASHBOARD) && (
         <>
           <Header 
             currentView={view} 
@@ -1139,7 +1141,11 @@ const App = () => {
                         user: updatedUser
                       }));
                     }}
+                    onNavigateToAdmin={() => setView(View.ADMIN_DASHBOARD)}
                 />
+             )}
+             {view === View.ADMIN_DASHBOARD && (
+                <AdminDashboard onBack={() => setView(View.PROFILE)} />
              )}
           </main>
           <footer className="py-4 px-4 border-t border-slate-100 bg-white">

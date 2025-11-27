@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { UserProfile, HistoryItem, Transaction } from '../types';
 import { getBillingHistory } from '../services/authService';
-import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download, Camera } from 'lucide-react';
+import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download, Camera, ShieldCheck } from 'lucide-react';
 import { Button } from './Button';
 import imageCompression from 'browser-image-compression';
 
@@ -11,9 +11,10 @@ interface ProfileProps {
   onLogout: () => void;
   onUpgrade: () => void;
   onUserUpdate?: (updatedUser: UserProfile) => void;
+  onNavigateToAdmin?: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpgrade, onUserUpdate }) => {
+export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpgrade, onUserUpdate, onNavigateToAdmin }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingBilling, setIsLoadingBilling] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -341,6 +342,30 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                     <Button variant="outline" size="sm" className="w-full sm:w-auto">Change Password</Button>
                 </div>
            </div>
+
+           {/* Admin Dashboard */}
+           {onNavigateToAdmin && (
+             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
+                   <ShieldCheck className="w-5 h-5 text-rose-500" /> Admin
+                </h3>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+                    <div className="flex flex-col">
+                        <span className="font-medium text-slate-900">Admin Dashboard</span>
+                        <span className="text-slate-500 text-sm">Manage payment requests and approve Pro plans</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full sm:w-auto"
+                      onClick={onNavigateToAdmin}
+                    >
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Open Admin Dashboard
+                    </Button>
+                </div>
+           </div>
+           )}
 
         </div>
       </div>

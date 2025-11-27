@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Check, Star, Zap, Shield, ScanSearch, Sparkles, Loader2 } from 'lucide-react';
+import { Check, Star, Zap, Shield, ScanSearch, Sparkles, Loader2, QrCode } from 'lucide-react';
 import { Button } from './Button';
 import { processPayment } from '../services/authService';
+import { QRPayment } from './QRPayment';
 
 interface PricingProps {
   onSubscribe: () => void;
@@ -14,12 +15,20 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showQRPayment, setShowQRPayment] = useState(false);
 
   const handleUpgrade = async () => {
     if (!userId) {
       setError("Please log in to upgrade.");
       return;
     }
+
+    // Show QR payment modal
+    setShowQRPayment(true);
+  };
+
+  const handleQRPaymentSuccess = async () => {
+    if (!userId) return;
 
     setIsProcessing(true);
     setError(null);
@@ -153,19 +162,69 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
                 ✅ Payment successful! Your account has been upgraded to Pro.
               </div>
             )}
-            <Button 
-                variant="primary" 
-                className="w-full py-4 text-base shadow-lg shadow-rose-900/40 border-none bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-500 hover:to-orange-500"
-                onClick={handleUpgrade}
-                disabled={isPremium || isProcessing}
-            >
-                {isProcessing ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-                ) : isPremium ? 'Active Plan' : 'Get Started with Pro'}
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                  variant="primary" 
+                  className="w-full py-4 text-base shadow-lg shadow-rose-900/40 border-none bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-500 hover:to-orange-500"
+                  onClick={handleUpgrade}
+                  disabled={isPremium || isProcessing}
+              >
+                  {isProcessing ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                  ) : isPremium ? 'Active Plan' : (
+                    <>
+                      <QrCode className="w-4 h-4 mr-2" />
+                      Pay with QR Code
+                    </>
+                  )}
+              </Button>
+              {!isPremium && !isProcessing && (
+                <button
+                  onClick={async () => {
+                    if (!userId) {
+                      setError("Please log in to upgrade.");
+                      return;
+                    }
+                    setIsProcessing(true);
+                    setError(null);
+                    try {
+                      const result = await processPayment(userId, "$19.00");
+                      if (result.success) {
+                        setSuccess(true);
+                        onSubscribe();
+                        if (onPaymentSuccess) {
+                          onPaymentSuccess();
+                        }
+                        setTimeout(() => setSuccess(false), 2000);
+                      } else {
+                        setError("Payment failed. Please try again.");
+                        setIsProcessing(false);
+                      }
+                    } catch (err: any) {
+                      setError(err.message || "Payment failed. Please try again.");
+                      setIsProcessing(false);
+                    }
+                  }}
+                  className="w-full text-sm text-slate-400 hover:text-slate-600 transition-colors py-2"
+                >
+                  Or pay directly (Instant)
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* QR Payment Modal */}
+      {userId && (
+        <QRPayment
+          isOpen={showQRPayment}
+          onClose={() => setShowQRPayment(false)}
+          amount="$19.00"
+          userId={userId}
+          onPaymentSuccess={handleQRPaymentSuccess}
+        />
+      )}
     </div>
   );
 };

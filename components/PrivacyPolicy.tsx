@@ -41,11 +41,15 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
               When you visit our website or use our services, we may collect certain information about you, including:
             </p>
             <ul className="list-disc pl-6 mb-6 text-slate-700 space-y-2">
-              <li><strong>Personal identification information:</strong> Name, email address, and profile picture provided voluntarily during registration</li>
-              <li><strong>Payment and billing information:</strong> Necessary to process your subscription payments, including payment method details, which are securely handled by trusted third-party payment processors</li>
-              <li><strong>Usage information:</strong> Text content you submit for humanization, detection results, and usage patterns to improve our services</li>
-              <li><strong>Browsing information:</strong> IP address, browser type, device information, and cookies collected automatically using standard web technologies</li>
+              <li><strong>Account information:</strong> Email address, password (encrypted), name, and profile picture provided during registration</li>
+              <li><strong>Payment information:</strong> Payment transaction IDs and mobile numbers submitted for payment verification. We do not store bank account details or payment card information</li>
+              <li><strong>Subscription information:</strong> Subscription status, premium expiration dates, and transaction history</li>
+              <li><strong>Usage metadata:</strong> Usage patterns, feature preferences, and service interaction data (not the actual text content you process)</li>
+              <li><strong>Technical information:</strong> IP address, browser type, device information, and cookies collected automatically using standard web technologies</li>
             </ul>
+            <p className="text-slate-700 leading-relaxed mb-6">
+              <strong>Important:</strong> We do NOT collect or store the actual text content you submit for humanization or detection. Your text is processed in real-time and immediately discarded after processing.
+            </p>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">Use of Information</h2>
             <p className="text-slate-700 leading-relaxed mb-4">
@@ -53,11 +57,13 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
             </p>
             <ul className="list-disc pl-6 mb-6 text-slate-700 space-y-2">
               <li>To provide and improve our AI text humanization and detection services</li>
-              <li>To process your subscription payments and manage your account</li>
-              <li>To communicate with you regarding your account, provide customer support, and respond to inquiries</li>
-              <li>To personalize your experience and present relevant features and recommendations</li>
+              <li>To verify and process your subscription payments via manual bank transfer</li>
+              <li>To manage your account, subscription status, and premium features access</li>
+              <li>To communicate with you regarding your account, payment verification, and provide customer support</li>
+              <li>To personalize your experience and track your usage limits (free tier vs. Pro plan)</li>
               <li>To detect and prevent fraud, unauthorized activities, and abuse of our services</li>
-              <li>To analyze usage patterns and improve our algorithms and service quality</li>
+              <li>To analyze service usage patterns (metadata only, not content) to improve our platform</li>
+              <li>To send important service updates and notifications related to your account</li>
             </ul>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">Data Security and Privacy</h2>
@@ -65,10 +71,12 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
               We take your privacy seriously:
             </p>
             <ul className="list-disc pl-6 mb-6 text-slate-700 space-y-2">
-              <li><strong>Text Content:</strong> We do not store or retain the text content you submit for humanization or detection after processing. Your content is processed in real-time and immediately discarded</li>
-              <li><strong>No Training Data:</strong> We do not use your submitted text to train AI models or share it with third parties</li>
-              <li><strong>Secure Storage:</strong> We implement industry-standard security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction</li>
-              <li><strong>Encryption:</strong> All data transmission is encrypted using SSL/TLS protocols</li>
+              <li><strong>Text Content Privacy:</strong> We do not store, retain, or have access to the text content you submit for humanization or detection. Your content is processed in real-time using our AI services and immediately discarded after generating results. We never see, store, or have access to your actual text content.</li>
+              <li><strong>No Training Data:</strong> We do not use your submitted text to train AI models, improve algorithms, or share it with any third parties. Your content remains completely private.</li>
+              <li><strong>Account Data Security:</strong> We implement industry-standard security measures including password hashing, secure database storage, and encrypted connections to protect your account information</li>
+              <li><strong>Payment Data:</strong> We only store payment transaction IDs and mobile numbers for verification purposes. We do not store bank account details, card numbers, or any sensitive payment information</li>
+              <li><strong>Encryption:</strong> All data transmission between your device and our servers is encrypted using SSL/TLS protocols</li>
+              <li><strong>Data Retention:</strong> Account data is retained while your account is active. You can request account deletion at any time, which will permanently remove all your personal information</li>
             </ul>
             <p className="text-slate-700 leading-relaxed mb-6">
               However, please be aware that no method of transmission over the internet or electronic storage is 100% secure, and we cannot guarantee absolute security.
@@ -79,7 +87,9 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
               We respect your privacy and do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except in the following circumstances:
             </p>
             <ul className="list-disc pl-6 mb-6 text-slate-700 space-y-2">
-              <li><strong>Trusted service providers:</strong> We may share your information with third-party service providers who assist us in operating our website, processing payments, and delivering services. These providers are contractually obligated to handle your data securely and confidentially</li>
+              <li><strong>AI Service Providers:</strong> We use Google's Gemini AI API for text processing. When you submit text, it is sent to Google's servers for processing, but Google does not use this content for training their models (as per their API terms). Your text is not stored by Google or us after processing.</li>
+              <li><strong>Hosting and Infrastructure:</strong> We may use third-party service providers for hosting, database management, and email services. These providers are contractually obligated to handle your data securely and confidentially</li>
+              <li><strong>Payment Processing:</strong> Payment verification is handled manually by our admin team. We do not use automated payment processors that store your payment information</li>
               <li><strong>Legal requirements:</strong> We may disclose your information if required to do so by law or in response to valid legal requests or orders</li>
               <li><strong>Business transfers:</strong> In the event of a merger, acquisition, or sale of assets, your information may be transferred as part of that transaction</li>
             </ul>

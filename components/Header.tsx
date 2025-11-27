@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, isPre
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User className="w-4 h-4" />
+              <User className="w-4 h-4" />
               )}
             </button>
             {onLogout && (

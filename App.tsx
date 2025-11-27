@@ -44,8 +44,6 @@ import {
   X
 } from 'lucide-react';
 
-declare const google: any;
-
 // Custom MinihaAI Logo Component (using favicon design)
 const MinihaAILogo: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => {
   return (

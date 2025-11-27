@@ -22,39 +22,6 @@ const saveLocalUser = (email: string, userData: any) => {
   localStorage.setItem('miniha_users_db', JSON.stringify(users));
 };
 
-export const loginWithGoogle = async (token?: string): Promise<UserProfile> => {
-  if (USE_REAL_BACKEND && token) {
-    try {
-        const response = await fetch(`${BACKEND_URL}/auth/google`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token })
-        });
-        
-        const data = await response.json();
-        if (!data.success) throw new Error(data.message);
-        
-        return data.user;
-    } catch (error) {
-        console.error("Backend login failed:", error);
-        throw error; // Re-throw to UI
-    }
-  }
-
-  // --- MOCK BACKEND SIMULATION (Fallback) ---
-  return new Promise((resolve) => {
-    setTimeout(() => {
-        resolve({
-            id: "user_" + Date.now(),
-            name: "Demo User",
-            email: "user@example.com",
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
-            isPremium: false
-        });
-    }, MOCK_DELAY);
-  });
-};
-
 export const signupWithEmail = async (email: string, password: string): Promise<UserProfile> => {
     if (USE_REAL_BACKEND) {
         try {

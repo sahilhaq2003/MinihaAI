@@ -7,7 +7,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sahilhaq2003:Sahil
 const userSchema = new mongoose.Schema({
   id: String, email: String, password: String, name: String,
   picture: String, provider: String, is_premium: Boolean,
-  google_id: String, created_at: Date
+  created_at: Date
 });
 
 const transactionSchema = new mongoose.Schema({

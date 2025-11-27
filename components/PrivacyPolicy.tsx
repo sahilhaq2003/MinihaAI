@@ -41,7 +41,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
               When you visit our website or use our services, we may collect certain information about you, including:
             </p>
             <ul className="list-disc pl-6 mb-6 text-slate-700 space-y-2">
-              <li><strong>Personal identification information:</strong> Name, email address, and profile picture (if you sign up using Google authentication) provided voluntarily during registration</li>
+              <li><strong>Personal identification information:</strong> Name, email address, and profile picture provided voluntarily during registration</li>
               <li><strong>Payment and billing information:</strong> Necessary to process your subscription payments, including payment method details, which are securely handled by trusted third-party payment processors</li>
               <li><strong>Usage information:</strong> Text content you submit for humanization, detection results, and usage patterns to improve our services</li>
               <li><strong>Browsing information:</strong> IP address, browser type, device information, and cookies collected automatically using standard web technologies</li>

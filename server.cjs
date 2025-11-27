@@ -1,7 +1,7 @@
 /**
  * BACKEND SERVER CODE (Node.js / Express / MongoDB)
  * 
- * Dependencies: npm install express cors body-parser google-auth-library mongoose dotenv uuid bcryptjs
+ * Dependencies: npm install express cors body-parser mongoose dotenv uuid bcryptjs
  * Run: node server.cjs
  */
 
@@ -10,14 +10,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { OAuth2Client } = require('google-auth-library');
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE';
 
 // --- MONGODB CONNECTION ---
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sahilhaq2003:Sahil%402003Haq@cluster0.buir1zc.mongodb.net/minihaai?retryWrites=true&w=majority';
@@ -35,7 +33,6 @@ const userSchema = new mongoose.Schema({
   picture: { type: String },
   provider: { type: String, default: 'email' },
   is_premium: { type: Boolean, default: false },
-  google_id: { type: String },
   created_at: { type: Date, default: Date.now }
 });
 
@@ -51,8 +48,6 @@ const transactionSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
-
-const client = new OAuth2Client(CLIENT_ID);
 
 // --- CORS CONFIGURATION ---
 const allowedOrigins = [
@@ -92,92 +87,6 @@ app.get('/api/health', (req, res) => {
     status: 'healthy', 
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' 
   });
-});
-
-// --- GOOGLE AUTH ---
-app.post('/api/auth/google', async (req, res) => {
-  const { token } = req.body;
-
-  try {
-    // SPECIAL HANDLING FOR DEMO/TESTING
-    if (token === 'dummy_token_for_simulation') {
-      const demoEmail = 'demo_user@example.com';
-      let user = await User.findOne({ email: demoEmail });
-      
-      if (!user) {
-        user = new User({
-          id: uuidv4(),
-          email: demoEmail,
-          name: 'Demo Google User',
-          picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=google_demo',
-          provider: 'google',
-          google_id: 'dummy_google_id_12345',
-          is_premium: false,
-          created_at: new Date()
-        });
-        await user.save();
-      }
-      
-      return res.status(200).json({
-        success: true,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          avatar: user.picture,
-          isPremium: user.is_premium
-        }
-      });
-    }
-
-    // REAL GOOGLE VERIFICATION
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: CLIENT_ID,
-    });
-    
-    const payload = ticket.getPayload();
-    const googleUserId = payload['sub'];
-    const email = payload['email'];
-    const name = payload['name'];
-    const picture = payload['picture'];
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = new User({
-        id: uuidv4(),
-        email,
-        name,
-        picture,
-        provider: 'google',
-        google_id: googleUserId,
-        is_premium: false,
-        created_at: new Date()
-      });
-      await user.save();
-    } else if (user.provider !== 'google') {
-      user.google_id = googleUserId;
-      user.provider = 'google';
-      user.picture = picture;
-      await user.save();
-    }
-
-    res.status(200).json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.picture,
-        isPremium: user.is_premium
-      }
-    });
-
-  } catch (error) {
-    console.error('Google Auth Error:', error);
-    res.status(401).json({ success: false, message: 'Invalid Token' });
-  }
 });
 
 // --- EMAIL SIGNUP ---
@@ -233,10 +142,6 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (!user) {
       return res.status(400).json({ success: false, message: 'User not found' });
-    }
-
-    if (user.provider === 'google') {
-      return res.status(400).json({ success: false, message: 'Please login with Google' });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);

@@ -7,7 +7,6 @@ import { Profile } from './components/Profile';
 import { VerifyEmail } from './components/VerifyEmail';
 import { ResetPassword } from './components/ResetPassword';
 import { PaymentSuccess } from './components/PaymentSuccess';
-import { RefundPolicy } from './components/RefundPolicy';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsConditions } from './components/TermsConditions';
 import { ReturnPolicy } from './components/ReturnPolicy';
@@ -139,9 +138,6 @@ const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
               © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
             </div>
             <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm">
-              <button onClick={() => setView(View.REFUND_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
-                Refund Policy
-              </button>
               <button onClick={() => setView(View.PRIVACY_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
                 Privacy Policy
               </button>
@@ -1143,13 +1139,12 @@ const App = () => {
        
        {view === View.PAYMENT_SUCCESS && <PaymentSuccess onPaymentSuccess={handlePaymentSuccess} onBack={() => setView(View.EDITOR)} />}
 
-       {view === View.REFUND_POLICY && <RefundPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.PRIVACY_POLICY && <PrivacyPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.TERMS_CONDITIONS && <TermsConditions onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.RETURN_POLICY && <ReturnPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
        {view === View.ADMIN_DASHBOARD && <AdminDashboard onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
 
-       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.REFUND_POLICY && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.RETURN_POLICY && view !== View.ADMIN_DASHBOARD) && (
+       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.RETURN_POLICY && view !== View.ADMIN_DASHBOARD) && (
         <>
           <Header 
             currentView={view} 
@@ -1194,9 +1189,6 @@ const App = () => {
                   © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
                 </div>
                 <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm">
-                  <button onClick={() => setView(View.REFUND_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
-                    Refund Policy
-                  </button>
                   <button onClick={() => setView(View.PRIVACY_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
                     Privacy Policy
                   </button>

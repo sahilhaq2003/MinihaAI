@@ -43,10 +43,24 @@ export interface HistoryItem {
   timestamp: number;
 }
 
+export interface SentenceDetection {
+  sentence: string;
+  aiProbability: number; // 0-100
+  isHighlighted: boolean;
+}
+
 export interface DetectionResult {
-  score: number; // 0 to 100
-  label: string;
+  score: number; // 0 to 100 (AI probability)
+  label: string; // "Human-Written" | "Mixed/Edited" | "Fully AI-Generated"
   analysis: string;
+  sentences?: SentenceDetection[]; // Sentence-by-sentence analysis
+  metrics?: {
+    perplexity?: number;
+    burstiness?: number;
+    averageSentenceLength?: number;
+    vocabularyRichness?: number;
+  };
+  detectedModels?: string[]; // Which AI models might have generated this
 }
 
 export interface EvaluationResult {

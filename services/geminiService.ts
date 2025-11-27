@@ -39,7 +39,10 @@ export const detectAIContent = async (text: string, apiKey?: string): Promise<De
     return {
       score: 0,
       label: "Error",
-      analysis: "No text provided for detection."
+      analysis: "No text provided for detection.",
+      sentences: [],
+      metrics: {},
+      detectedModels: []
     };
   }
 
@@ -56,21 +59,30 @@ export const detectAIContent = async (text: string, apiKey?: string): Promise<De
       return {
         score: 0,
         label: "Error",
-        analysis: data.message || "Detection failed."
+        analysis: data.message || "Detection failed.",
+        sentences: [],
+        metrics: {},
+        detectedModels: []
       };
     }
 
     return {
       score: data.score || 0,
       label: data.label || "Unknown",
-      analysis: data.analysis || "No analysis available."
+      analysis: data.analysis || "No analysis available.",
+      sentences: data.sentences || [],
+      metrics: data.metrics || {},
+      detectedModels: data.detectedModels || []
     };
   } catch (error: any) {
     console.error("Detection API Error:", error);
     return {
       score: 0,
       label: "Connection Error",
-      analysis: "Unable to reach the detection service."
+      analysis: "Unable to reach the detection service.",
+      sentences: [],
+      metrics: {},
+      detectedModels: []
     };
   }
 };

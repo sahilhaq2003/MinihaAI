@@ -13,7 +13,6 @@ interface QRPaymentProps {
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
 
 export const QRPayment: React.FC<QRPaymentProps> = ({ isOpen, onClose, amount, userId, onPaymentSuccess }) => {
-  const [qrCodeData, setQrCodeData] = useState<string>('');
   const [paymentId, setPaymentId] = useState<string>('');
   const [isChecking, setIsChecking] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'submitted' | 'success' | 'failed'>('pending');
@@ -24,28 +23,11 @@ export const QRPayment: React.FC<QRPaymentProps> = ({ isOpen, onClose, amount, u
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Generate payment ID and QR code data
+  // Generate payment ID
   useEffect(() => {
     if (isOpen) {
       const id = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       setPaymentId(id);
-      
-      // Generate QR code with bank account details in a format readable by banking apps
-      // Format: Structured bank transfer details that can be scanned by mobile banking apps
-      const bankDetails = `BANK TRANSFER DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Bank Name: Peoples Bank
-Branch: Kolonawa Branch
-Account Number: 194 2 002 8 0021843
-Amount: ${amount} (LKR 1,500)
-Reference: ${id}
-Description: MinihaAI Pro Plan Payment
-
-Payment ID: ${id}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After payment, submit your Payment ID and Mobile Number on the payment page.`;
-      
-      setQrCodeData(bankDetails);
       setPaymentStatus('pending');
       setSubmitError(null);
       setSubmitSuccess(false);
@@ -108,12 +90,6 @@ After payment, submit your Payment ID and Mobile Number on the payment page.`;
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const generateQRCodeSVG = (data: string): string => {
-    // Generate QR code using a free QR code API service
-    // In production, you can use a library like 'qrcode.react' or generate on backend
-    // For now, using a reliable QR code API
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data)}&bgcolor=ffffff&color=000000&margin=1`;
-  };
 
   if (!isOpen) return null;
 
@@ -139,17 +115,13 @@ After payment, submit your Payment ID and Mobile Number on the payment page.`;
           <>
             {/* QR Code Section */}
             <div className="bg-gradient-to-br from-rose-50 to-orange-50 rounded-xl p-4 sm:p-6 mb-4 flex flex-col items-center justify-center border-2 border-dashed border-rose-200">
-              {qrCodeData ? (
-                <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm mb-3">
-                  <img
-                    src={generateQRCodeSVG(qrCodeData)}
-                    alt="Payment QR Code"
-                    className="w-48 h-48 sm:w-64 sm:h-64"
-                  />
-                </div>
-              ) : (
-                <Loader2 className="w-16 h-16 text-slate-300 animate-spin" />
-              )}
+              <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm mb-3">
+                <img
+                  src="/qr-payment.jpeg"
+                  alt="Payment QR Code"
+                  className="w-48 h-48 sm:w-64 sm:h-64 object-contain"
+                />
+              </div>
               <p className="text-xs sm:text-sm text-slate-600 text-center mt-2">
                 Scan with your banking app or mobile payment app
               </p>

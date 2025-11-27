@@ -121,7 +121,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
             </div>
             
             <div className="mb-8">
-                <span className="text-5xl font-extrabold text-white tracking-tight">$5</span>
+                <span className="text-5xl font-extrabold text-white tracking-tight">$5 <span className="text-2xl">(LKR 1,500)</span></span>
                 <span className="text-slate-400 font-medium">/month</span>
             </div>
             

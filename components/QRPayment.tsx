@@ -37,7 +37,7 @@ export const QRPayment: React.FC<QRPaymentProps> = ({ isOpen, onClose, amount, u
 Bank Name: Peoples Bank
 Branch: Kolonawa Branch
 Account Number: 194 2 002 8 0021843
-Amount: ${amount}
+Amount: ${amount} (LKR 1,500)
 Reference: ${id}
 Description: MinihaAI Pro Plan Payment
 
@@ -160,7 +160,7 @@ After payment, submit your Payment ID and Mobile Number on the payment page.`;
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-slate-700">Amount:</span>
-                  <span className="text-xl sm:text-2xl font-bold text-rose-600">{amount}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-rose-600">{amount} <span className="text-base sm:text-lg text-slate-600">(LKR 1,500)</span></span>
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-sm font-medium text-slate-700">Payment ID:</span>

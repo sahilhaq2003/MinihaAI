@@ -12,7 +12,7 @@ import { TermsConditions } from './components/TermsConditions';
 import { AdminDashboard } from './components/AdminDashboard';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
 import { logoutUser, signupWithEmail, loginWithEmail } from './services/authService';
-import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary } from './types';
+import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary, DailyUsage } from './types';
 import { 
   Wand2, 
   Copy, 
@@ -366,15 +366,55 @@ const App = () => {
   const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
+  // Helper function to get today's date string
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+
+  // Helper function to get or initialize daily usage
+  const getDailyUsage = (): DailyUsage => {
+    const today = getTodayDate();
+    const saved = localStorage.getItem('miniha_daily_usage');
+    if (saved) {
+      const usage = JSON.parse(saved);
+      // Reset if it's a new day
+      if (usage.date !== today) {
+        const newUsage = { date: today, humanizations: 0, detections: 0 };
+        localStorage.setItem('miniha_daily_usage', JSON.stringify(newUsage));
+        return newUsage;
+      }
+      return usage;
+    }
+    const newUsage = { date: today, humanizations: 0, detections: 0 };
+    localStorage.setItem('miniha_daily_usage', JSON.stringify(newUsage));
+    return newUsage;
+  };
+
+  // Helper function to update daily usage
+  const updateDailyUsage = (type: 'humanizations' | 'detections') => {
+    const usage = getDailyUsage();
+    usage[type]++;
+    localStorage.setItem('miniha_daily_usage', JSON.stringify(usage));
+    return usage;
+  };
+
   // User Persistence
   const [userState, setUserState] = useState<UserState>(() => {
     const saved = localStorage.getItem('miniha_user');
-    return saved ? JSON.parse(saved) : { 
+    const dailyUsage = getDailyUsage();
+    return saved ? { ...JSON.parse(saved), dailyUsage } : { 
         isLoggedIn: false, 
         isPremium: false, 
-        history: [] 
+        history: [],
+        dailyUsage
     };
   });
+
+  // Update daily usage in state when date changes
+  useEffect(() => {
+    const usage = getDailyUsage();
+    setUserState(prev => ({ ...prev, dailyUsage: usage }));
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('miniha_user', JSON.stringify(userState));
@@ -454,12 +494,25 @@ const App = () => {
 
   // --- Handlers ---
   const handleLoginSuccess = (userProfile: any) => {
+    const isPremium = userProfile?.isPremium || false;
+    const dailyUsage = getDailyUsage();
+    
     setUserState(prev => ({
         ...prev,
         isLoggedIn: true,
-        isPremium: userProfile?.isPremium || false,
-        user: userProfile
+        isPremium: isPremium,
+        user: userProfile,
+        dailyUsage: dailyUsage
     }));
+    
+    // Reset tone and intensity for free users
+    if (!isPremium) {
+      setTone(Tone.STANDARD);
+      if (intensity > 70) {
+        setIntensity(70);
+      }
+    }
+    
     setView(View.EDITOR);
   };
 
@@ -478,9 +531,29 @@ const App = () => {
   const handleHumanize = async () => {
     if (!input.trim()) return;
     
-    if (!userState.isPremium && (tone !== Tone.STANDARD || intensity > 70)) {
-      setView(View.PRICING);
-      return;
+    // Check premium restrictions
+    if (!userState.isPremium) {
+      // Check tone restriction
+      if (tone !== Tone.STANDARD) {
+        alert("Standard tone only available on Free plan. Upgrade to Pro for all 7 tones.");
+        setView(View.PRICING);
+        return;
+      }
+      
+      // Check intensity restriction
+      if (intensity > 70) {
+        alert("Intensity above 70% requires Pro plan. Upgrade to unlock advanced settings.");
+        setView(View.PRICING);
+        return;
+      }
+      
+      // Check daily limit
+      const usage = getDailyUsage();
+      if (usage.humanizations >= 10) {
+        alert("Daily limit reached! You've used 10/10 humanizations today. Upgrade to Pro for unlimited usage.");
+        setView(View.PRICING);
+        return;
+      }
     }
 
     setIsProcessing(true);
@@ -496,6 +569,12 @@ const App = () => {
         intensity
       });
       setOutput(result);
+      
+      // Update daily usage for free users
+      if (!userState.isPremium) {
+        const updatedUsage = updateDailyUsage('humanizations');
+        setUserState(prev => ({ ...prev, dailyUsage: updatedUsage }));
+      }
       
       const newItem: HistoryItem = {
         id: Date.now().toString(),
@@ -534,11 +613,28 @@ const App = () => {
 
   const handleDetect = async () => {
     if (!detectorInput.trim()) return;
+    
+    // Check daily limit for free users
+    if (!userState.isPremium) {
+      const usage = getDailyUsage();
+      if (usage.detections >= 3) {
+        alert("Daily limit reached! You've used 3/3 detections today. Upgrade to Pro for unlimited detections.");
+        setView(View.PRICING);
+        return;
+      }
+    }
+    
     setIsProcessing(true);
     setDetectionResult(null); // Clear previous result
     try {
         const result = await detectAIContent(detectorInput);
         setDetectionResult(result);
+        
+        // Update daily usage for free users
+        if (!userState.isPremium) {
+          const updatedUsage = updateDailyUsage('detections');
+          setUserState(prev => ({ ...prev, dailyUsage: updatedUsage }));
+        }
     } catch (err: any) {
       console.error(err);
       alert("Failed to detect content. " + err.message);
@@ -703,10 +799,20 @@ const App = () => {
                               <span className="text-rose-600 font-semibold">Text will be truncated</span>
                           )}
                       </div>
+                      {!userState.isPremium && userState.dailyUsage && (
+                        <div className="mb-3 text-center">
+                          <span className="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 inline-block">
+                            {userState.dailyUsage.detections}/3 detections used today
+                            {userState.dailyUsage.detections >= 3 && (
+                              <span className="ml-2 text-rose-600 font-semibold">• Limit reached</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                       <Button 
                         onClick={handleDetect} 
                         isLoading={isProcessing} 
-                        disabled={!detectorInput.trim() || isOverLimit}
+                        disabled={!detectorInput.trim() || isOverLimit || (!userState.isPremium && userState.dailyUsage && userState.dailyUsage.detections >= 3)}
                         className="w-full py-3 text-base shadow-rose-500/20"
                       >
                           <ScanSearch className="w-5 h-5 mr-2" />
@@ -907,17 +1013,39 @@ const App = () => {
               <div className="relative group flex-1 sm:flex-none">
                 <select 
                   value={tone}
-                  onChange={(e) => setTone(e.target.value as Tone)}
-                  className="appearance-none block w-full sm:w-40 rounded-lg border-slate-200 text-sm font-medium focus:border-rose-500 focus:ring-rose-500 bg-white py-2 pl-3 pr-8 shadow-sm hover:border-slate-300 transition-colors cursor-pointer text-slate-700 h-10"
+                  onChange={(e) => {
+                    if (!userState.isPremium && e.target.value !== Tone.STANDARD) {
+                      alert("Standard tone only available on Free plan. Upgrade to Pro for all 7 tones.");
+                      return;
+                    }
+                    setTone(e.target.value as Tone);
+                  }}
+                  disabled={!userState.isPremium && tone !== Tone.STANDARD}
+                  className={`appearance-none block w-full sm:w-40 rounded-lg border-slate-200 text-sm font-medium focus:border-rose-500 focus:ring-rose-500 bg-white py-2 pl-3 pr-8 shadow-sm hover:border-slate-300 transition-colors h-10 ${
+                    !userState.isPremium && tone !== Tone.STANDARD 
+                      ? 'cursor-not-allowed opacity-50' 
+                      : 'cursor-pointer text-slate-700'
+                  }`}
                 >
                   {Object.values(Tone).map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                    <option key={t} value={t} disabled={!userState.isPremium && t !== Tone.STANDARD}>
+                      {t} {!userState.isPremium && t !== Tone.STANDARD ? '(Pro)' : ''}
+                    </option>
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
                   <ChevronDown className="h-4 w-4" />
                 </div>
               </div>
+              
+              {/* Usage Indicator for Free Users */}
+              {!userState.isPremium && userState.dailyUsage && (
+                <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                  <span className="font-medium">
+                    {userState.dailyUsage.humanizations}/10 humanizations
+                  </span>
+                </div>
+              )}
 
               {/* Advanced Toggle */}
               <button 
@@ -935,6 +1063,11 @@ const App = () => {
             </div>
             
             <div className="flex items-center gap-2 ml-auto w-full lg:w-auto justify-end mt-1 lg:mt-0">
+              {!userState.isPremium && userState.dailyUsage && userState.dailyUsage.humanizations >= 10 && (
+                <span className="text-xs text-rose-600 font-medium bg-rose-50 px-2 py-1 rounded border border-rose-200">
+                  Daily limit reached
+                </span>
+              )}
               <Button 
                 variant="ghost" 
                 size="md"
@@ -946,6 +1079,7 @@ const App = () => {
               <Button 
                 onClick={handleHumanize} 
                 isLoading={isProcessing}
+                disabled={!userState.isPremium && userState.dailyUsage && userState.dailyUsage.humanizations >= 10}
                 className="shadow-rose-500/20 w-full sm:w-auto h-10"
               >
                 <Wand2 className="w-4 h-4 mr-2" />
@@ -983,16 +1117,26 @@ const App = () => {
                   <input 
                     type="range" 
                     min="0" 
-                    max="100" 
+                    max={userState.isPremium ? "100" : "70"}
                     step="10"
                     value={intensity}
-                    onChange={(e) => setIntensity(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-rose-600"
+                    onChange={(e) => {
+                      const newIntensity = Number(e.target.value);
+                      if (!userState.isPremium && newIntensity > 70) {
+                        alert("Intensity above 70% requires Pro plan. Upgrade to unlock advanced settings.");
+                        return;
+                      }
+                      setIntensity(newIntensity);
+                    }}
+                    disabled={!userState.isPremium && intensity >= 70}
+                    className={`w-full h-1.5 bg-slate-200 rounded-full appearance-none accent-rose-600 ${
+                      !userState.isPremium && intensity >= 70 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                    }`}
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 px-0.5">
                      <span>Subtle</span>
                      <span>Balanced</span>
-                     <span>Creative</span>
+                     <span>{userState.isPremium ? 'Creative' : 'Max 70% (Pro)'}</span>
                   </div>
                </div>
             </div>

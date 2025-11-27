@@ -90,9 +90,16 @@ export interface Transaction {
   invoice: string;
 }
 
+export interface DailyUsage {
+  date: string; // YYYY-MM-DD format
+  humanizations: number;
+  detections: number;
+}
+
 export interface UserState {
   isLoggedIn: boolean;
   user?: UserProfile;
   isPremium: boolean;
   history: HistoryItem[];
+  dailyUsage?: DailyUsage;
 }

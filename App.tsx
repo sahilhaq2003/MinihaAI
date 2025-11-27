@@ -7,6 +7,10 @@ import { Profile } from './components/Profile';
 import { VerifyEmail } from './components/VerifyEmail';
 import { ResetPassword } from './components/ResetPassword';
 import { PaymentSuccess } from './components/PaymentSuccess';
+import { RefundPolicy } from './components/RefundPolicy';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { TermsConditions } from './components/TermsConditions';
+import { ReturnPolicy } from './components/ReturnPolicy';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
 import { logoutUser, signupWithEmail, loginWithEmail } from './services/authService';
 import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary } from './types';
@@ -129,8 +133,28 @@ const LandingPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
         </div>
       </main>
 
-      <footer className="py-6 text-center text-slate-400 text-xs sm:text-sm border-t border-slate-100 bg-slate-50">
-        © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
+      <footer className="py-6 px-4 border-t border-slate-100 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+            <div className="text-slate-400 text-xs sm:text-sm">
+              © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm">
+              <button onClick={() => setView(View.REFUND_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                Refund Policy
+              </button>
+              <button onClick={() => setView(View.PRIVACY_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                Privacy Policy
+              </button>
+              <button onClick={() => setView(View.TERMS_CONDITIONS)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                Terms & Conditions
+              </button>
+              <button onClick={() => setView(View.RETURN_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                Return Policy
+              </button>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );
@@ -1080,7 +1104,12 @@ const App = () => {
        
        {view === View.PAYMENT_SUCCESS && <PaymentSuccess onPaymentSuccess={handlePaymentSuccess} onBack={() => setView(View.EDITOR)} />}
 
-       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS) && (
+       {view === View.REFUND_POLICY && <RefundPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
+       {view === View.PRIVACY_POLICY && <PrivacyPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
+       {view === View.TERMS_CONDITIONS && <TermsConditions onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
+       {view === View.RETURN_POLICY && <ReturnPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
+
+       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.REFUND_POLICY && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.RETURN_POLICY) && (
         <>
           <Header 
             currentView={view} 
@@ -1113,8 +1142,28 @@ const App = () => {
                 />
              )}
           </main>
-          <footer className="py-4 text-center text-slate-400 text-xs sm:text-sm border-t border-slate-100 bg-white">
-            © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
+          <footer className="py-4 px-4 border-t border-slate-100 bg-white">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-slate-400 text-xs sm:text-sm">
+                  © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
+                </div>
+                <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm">
+                  <button onClick={() => setView(View.REFUND_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                    Refund Policy
+                  </button>
+                  <button onClick={() => setView(View.PRIVACY_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                    Privacy Policy
+                  </button>
+                  <button onClick={() => setView(View.TERMS_CONDITIONS)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                    Terms & Conditions
+                  </button>
+                  <button onClick={() => setView(View.RETURN_POLICY)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                    Return Policy
+                  </button>
+                </div>
+              </div>
+            </div>
           </footer>
         </>
        )}

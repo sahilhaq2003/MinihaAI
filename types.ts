@@ -81,6 +81,7 @@ export interface UserProfile {
   email: string;
   avatar?: string;
   isPremium: boolean;
+  premiumExpiresAt?: string | null;
 }
 
 export interface Transaction {

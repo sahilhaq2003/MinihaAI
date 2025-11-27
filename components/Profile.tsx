@@ -46,6 +46,22 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
   const totalWords = history.reduce((acc, item) => acc + item.humanized.length, 0);
   const wordsSaved = Math.round(totalWords / 5); // Estimate 5 chars per word
 
+  // Calculate remaining days for premium plan
+  const getRemainingDays = () => {
+    if (!user.isPremium || !user.premiumExpiresAt) return null;
+    
+    const expirationDate = new Date(user.premiumExpiresAt);
+    const now = new Date();
+    const diffTime = expirationDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const isExpired = diffDays <= 0;
+    const daysRemaining = isExpired ? 0 : diffDays;
+    
+    return { daysRemaining, isExpired };
+  };
+
+  const remainingDaysInfo = getRemainingDays();
+
   // Handle photo upload
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -152,7 +168,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
             if (data.success && data.user.isPremium) {
               setPaymentStatusMessage('✅ Your payment has been approved! Your Pro plan is now active.');
               if (onUserUpdate) {
-                onUserUpdate({ ...user, isPremium: true });
+                onUserUpdate({ ...user, isPremium: true, premiumExpiresAt: data.user.premiumExpiresAt });
               }
               if (onUpgrade) {
                 onUpgrade();
@@ -192,7 +208,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
           if (data.success && data.user.isPremium) {
             setPaymentStatusMessage('✅ Your payment has been approved! Your Pro plan is now active.');
             if (onUserUpdate) {
-              onUserUpdate({ ...user, isPremium: true });
+              onUserUpdate({ ...user, isPremium: true, premiumExpiresAt: data.user.premiumExpiresAt });
             }
             if (onUpgrade) {
               onUpgrade();
@@ -348,6 +364,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                  <p className="text-slate-900 font-medium flex items-center gap-2">
                     {user.isPremium ? '•••• 4242' : 'None added'}
                  </p>
+                 {remainingDaysInfo && (
+                   <p className={`text-xs mt-1 ${remainingDaysInfo.isExpired ? 'text-red-600 font-semibold' : remainingDaysInfo.daysRemaining <= 7 ? 'text-orange-600 font-semibold' : 'text-slate-500'}`}>
+                     {remainingDaysInfo.isExpired 
+                       ? 'Expired' 
+                       : remainingDaysInfo.daysRemaining === 1 
+                         ? '1 day remaining' 
+                         : `${remainingDaysInfo.daysRemaining} days remaining`}
+                   </p>
+                 )}
                </div>
             </div>
 

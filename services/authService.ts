@@ -290,6 +290,26 @@ export const resetPassword = async (token: string, email: string, newPassword: s
   return { success: true, message: "Password reset successful" };
 };
 
+// Change password (for logged-in users)
+export const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, currentPassword, newPassword })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Password change failed");
+      return data;
+    } catch (error: any) {
+      console.error("Change password error:", error);
+      throw new Error(error.message || "Failed to change password. Please try again.");
+    }
+  }
+  return { success: true, message: "Password changed successfully" };
+};
+
 // Delete user account
 export const deleteAccount = async (userId: string): Promise<{ success: boolean; message: string }> => {
   if (USE_REAL_BACKEND) {

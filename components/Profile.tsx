@@ -5,6 +5,7 @@ import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Setti
 import { Button } from './Button';
 import imageCompression from 'browser-image-compression';
 import { DeleteAccountModal } from './DeleteAccountModal';
+import { ChangePassword } from './ChangePassword';
 import { deleteAccount, checkPaymentStatus } from '../services/authService';
 
 interface ProfileProps {
@@ -22,6 +23,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -472,7 +474,14 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                         <span className="font-medium text-slate-900">Password</span>
                         <span className="text-slate-500 text-sm">Last changed 3 months ago</span>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto">Change Password</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full sm:w-auto"
+                      onClick={() => setShowChangePasswordModal(true)}
+                    >
+                      Change Password
+                    </Button>
                 </div>
            </div>
 
@@ -531,6 +540,14 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                setShowDeleteModal(false);
                onLogout();
              }}
+             userEmail={user.email}
+           />
+
+           {/* Change Password Modal */}
+           <ChangePassword
+             isOpen={showChangePasswordModal}
+             onClose={() => setShowChangePasswordModal(false)}
+             userId={user.id}
              userEmail={user.email}
            />
 

@@ -59,10 +59,25 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
     const isExpired = diffDays <= 0;
     const daysRemaining = isExpired ? 0 : diffDays;
     
-    return { daysRemaining, isExpired };
+    return { daysRemaining, isExpired, expirationDate };
   };
 
   const remainingDaysInfo = getRemainingDays();
+
+  // Format next payment date from expiration date
+  const getNextPaymentDate = () => {
+    if (!user.isPremium || !user.premiumExpiresAt) return null;
+    
+    const expirationDate = new Date(user.premiumExpiresAt);
+    // Format date as "Mon DD, YYYY" (e.g., "Nov 24, 2024")
+    return expirationDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const nextPaymentDate = getNextPaymentDate();
 
   // Handle photo upload
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -359,21 +374,33 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                </div>
                <div className="space-y-1">
                  <span className="text-xs font-bold text-slate-400 uppercase">Next Payment</span>
-                 <p className="text-slate-900 font-medium">{user.isPremium ? 'Nov 24, 2024' : 'N/A'}</p>
+                 <p className="text-slate-900 font-medium">
+                   {user.isPremium && nextPaymentDate ? nextPaymentDate : 'N/A'}
+                 </p>
                </div>
                <div className="space-y-1">
-                 <span className="text-xs font-bold text-slate-400 uppercase">Payment Method</span>
-                 <p className="text-slate-900 font-medium flex items-center gap-2">
-                    {user.isPremium ? '•••• 4242' : 'None added'}
-                 </p>
-                 {remainingDaysInfo && (
-                   <p className={`text-xs mt-1 ${remainingDaysInfo.isExpired ? 'text-red-600 font-semibold' : remainingDaysInfo.daysRemaining <= 7 ? 'text-orange-600 font-semibold' : 'text-slate-500'}`}>
-                     {remainingDaysInfo.isExpired 
-                       ? 'Expired' 
-                       : remainingDaysInfo.daysRemaining === 1 
-                         ? '1 day remaining' 
-                         : `${remainingDaysInfo.daysRemaining} days remaining`}
-                   </p>
+                 <span className="text-xs font-bold text-slate-400 uppercase">Plan Expires</span>
+                 {user.isPremium && remainingDaysInfo ? (
+                   <div>
+                     <p className={`text-slate-900 font-medium ${remainingDaysInfo.isExpired ? 'text-red-600' : remainingDaysInfo.daysRemaining <= 7 ? 'text-orange-600' : ''}`}>
+                       {remainingDaysInfo.isExpired 
+                         ? 'Expired' 
+                         : remainingDaysInfo.daysRemaining === 1 
+                           ? '1 day remaining' 
+                           : `${remainingDaysInfo.daysRemaining} days remaining`}
+                     </p>
+                     {remainingDaysInfo.expirationDate && (
+                       <p className="text-slate-500 text-xs mt-1">
+                         Expires on {remainingDaysInfo.expirationDate.toLocaleDateString('en-US', { 
+                           year: 'numeric', 
+                           month: 'short', 
+                           day: 'numeric' 
+                         })}
+                       </p>
+                     )}
+                   </div>
+                 ) : (
+                   <p className="text-slate-900 font-medium">N/A</p>
                  )}
                </div>
             </div>

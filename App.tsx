@@ -389,6 +389,44 @@ const App = () => {
     localStorage.setItem('miniha_user', JSON.stringify(userState));
   }, [userState]);
 
+  // Check payment status periodically if user is logged in and not premium
+  useEffect(() => {
+    if (!userState.isLoggedIn || !userState.user?.id || userState.isPremium) return;
+
+    const checkPaymentStatus = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api'}/payment/status/${userState.user.id}`);
+        const data = await response.json();
+        
+        if (data.success && data.isPremium) {
+          // User's payment was approved - refresh user data
+          const userResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api'}/user/${userState.user.id}`);
+          const userData = await userResponse.json();
+          
+          if (userData.success && userData.user.isPremium) {
+            setUserState(prev => ({
+              ...prev,
+              isPremium: true,
+              user: { ...prev.user!, isPremium: true }
+            }));
+            // Show success notification
+            alert('🎉 Your payment has been approved! Your Pro plan is now active.');
+          }
+        }
+      } catch (error) {
+        console.error('Payment status check error:', error);
+      }
+    };
+
+    // Check immediately
+    checkPaymentStatus();
+
+    // Check every 30 seconds if user has pending payment
+    const interval = setInterval(checkPaymentStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, [userState.isLoggedIn, userState.user?.id, userState.isPremium]);
+
 
   // Check URL parameters on mount
   useEffect(() => {
@@ -1138,7 +1176,8 @@ const App = () => {
                     onUserUpdate={(updatedUser) => {
                       setUserState(prev => ({
                         ...prev,
-                        user: updatedUser
+                        user: updatedUser,
+                        isPremium: updatedUser.isPremium || false
                       }));
                     }}
                     onNavigateToAdmin={() => setView(View.ADMIN_DASHBOARD)}

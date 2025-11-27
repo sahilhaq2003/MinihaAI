@@ -308,3 +308,19 @@ export const deleteAccount = async (userId: string): Promise<{ success: boolean;
   }
   return { success: true, message: "Account deleted successfully" };
 };
+
+// Check payment status and refresh user data
+export const checkPaymentStatus = async (userId: string): Promise<{ success: boolean; isPremium?: boolean; hasPending?: boolean; paymentRequest?: any }> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/payment/status/${userId}`);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Failed to check payment status");
+      return data;
+    } catch (error: any) {
+      console.error("Check payment status error:", error);
+      return { success: false };
+    }
+  }
+  return { success: false };
+};

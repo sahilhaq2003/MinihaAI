@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { UserProfile, HistoryItem, Transaction } from '../types';
 import { getBillingHistory } from '../services/authService';
-import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download, Camera, ShieldCheck, Trash2 } from 'lucide-react';
+import { User, Mail, CreditCard, Calendar, BarChart3, Shield, Zap, LogOut, Settings, Download, Camera, ShieldCheck, Trash2, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from './Button';
 import imageCompression from 'browser-image-compression';
 import { DeleteAccountModal } from './DeleteAccountModal';
-import { deleteAccount } from '../services/authService';
+import { deleteAccount, checkPaymentStatus } from '../services/authService';
 
 interface ProfileProps {
   user: UserProfile;
@@ -22,6 +22,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -132,6 +134,83 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
       console.error('Compression error:', error);
       setUploadError('Failed to process image. Please try again.');
       setIsUploadingPhoto(false);
+    }
+  };
+
+  // Check payment status on mount and periodically
+  useEffect(() => {
+    if (!user.isPremium) {
+      const checkStatus = async () => {
+        try {
+          const status = await checkPaymentStatus(user.id);
+          if (status.success && status.isPremium) {
+            // Payment was approved - refresh user data
+            const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
+            const response = await fetch(`${BACKEND_URL}/user/${user.id}`);
+            const data = await response.json();
+            
+            if (data.success && data.user.isPremium) {
+              setPaymentStatusMessage('✅ Your payment has been approved! Your Pro plan is now active.');
+              if (onUserUpdate) {
+                onUserUpdate({ ...user, isPremium: true });
+              }
+              if (onUpgrade) {
+                onUpgrade();
+              }
+              // Clear message after 5 seconds
+              setTimeout(() => setPaymentStatusMessage(null), 5000);
+            }
+          }
+        } catch (error) {
+          console.error('Payment status check error:', error);
+        }
+      };
+
+      // Check immediately
+      checkStatus();
+      
+      // Check every 30 seconds
+      const interval = setInterval(checkStatus, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user.id, user.isPremium, onUserUpdate, onUpgrade]);
+
+  const handleCheckPaymentStatus = async () => {
+    setIsCheckingPayment(true);
+    setPaymentStatusMessage(null);
+    
+    try {
+      const status = await checkPaymentStatus(user.id);
+      
+      if (status.success) {
+        if (status.isPremium) {
+          // Payment was approved - refresh user data
+          const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
+          const response = await fetch(`${BACKEND_URL}/user/${user.id}`);
+          const data = await response.json();
+          
+          if (data.success && data.user.isPremium) {
+            setPaymentStatusMessage('✅ Your payment has been approved! Your Pro plan is now active.');
+            if (onUserUpdate) {
+              onUserUpdate({ ...user, isPremium: true });
+            }
+            if (onUpgrade) {
+              onUpgrade();
+            }
+          } else {
+            setPaymentStatusMessage('Your payment is still pending approval.');
+          }
+        } else if (status.hasPending) {
+          setPaymentStatusMessage('⏳ Your payment request is pending admin approval.');
+        } else {
+          setPaymentStatusMessage('No pending payment requests found.');
+        }
+      }
+    } catch (error) {
+      setPaymentStatusMessage('Failed to check payment status. Please try again.');
+    } finally {
+      setIsCheckingPayment(false);
+      setTimeout(() => setPaymentStatusMessage(null), 5000);
     }
   };
   
@@ -273,14 +352,40 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
             </div>
 
             <div className="p-6 bg-slate-50 border-t border-slate-100">
+               {paymentStatusMessage && (
+                 <div className={`mb-4 p-3 rounded-lg text-sm flex items-center gap-2 ${
+                   paymentStatusMessage.includes('✅') 
+                     ? 'bg-green-50 text-green-700 border border-green-200' 
+                     : paymentStatusMessage.includes('⏳')
+                     ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                     : 'bg-slate-100 text-slate-700'
+                 }`}>
+                   {paymentStatusMessage.includes('✅') && <CheckCircle2 className="w-4 h-4" />}
+                   {paymentStatusMessage}
+                 </div>
+               )}
+               
                {!user.isPremium ? (
-                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="text-sm text-slate-600">
-                      Unlock unlimited humanization and advanced detector bypass.
+                 <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                       <div className="text-sm text-slate-600">
+                         Unlock unlimited humanization and advanced detector bypass.
+                       </div>
+                       <Button onClick={onUpgrade} className="w-full sm:w-auto shadow-rose-500/20">
+                         <Zap className="w-4 h-4 mr-2" /> Upgrade to Pro
+                       </Button>
                     </div>
-                    <Button onClick={onUpgrade} className="w-full sm:w-auto shadow-rose-500/20">
-                      <Zap className="w-4 h-4 mr-2" /> Upgrade to Pro
-                    </Button>
+                    <div className="pt-2 border-t border-slate-200">
+                       <Button 
+                         variant="outline" 
+                         onClick={handleCheckPaymentStatus}
+                         disabled={isCheckingPayment}
+                         className="w-full sm:w-auto text-xs"
+                       >
+                         <RefreshCw className={`w-3 h-3 mr-2 ${isCheckingPayment ? 'animate-spin' : ''}`} />
+                         {isCheckingPayment ? 'Checking...' : 'Check Payment Status'}
+                       </Button>
+                    </div>
                  </div>
                ) : (
                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

@@ -30,17 +30,22 @@ export const QRPayment: React.FC<QRPaymentProps> = ({ isOpen, onClose, amount, u
       const id = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       setPaymentId(id);
       
-      // Generate QR code with payment instructions
-      // Include bank details for payment
-      const paymentInstructions = `MinihaAI Pro Plan Payment
-Amount: ${amount}
-Payment ID: ${id}
-Bank: Peoples Bank
+      // Generate QR code with bank account details in a format readable by banking apps
+      // Format: Structured bank transfer details that can be scanned by mobile banking apps
+      const bankDetails = `BANK TRANSFER DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Bank Name: Peoples Bank
+Branch: Kolonawa Branch
 Account Number: 194 2 002 8 0021843
+Amount: ${amount}
+Reference: ${id}
+Description: MinihaAI Pro Plan Payment
 
-After payment, submit your payment ID and mobile number on this page.`;
+Payment ID: ${id}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+After payment, submit your Payment ID and Mobile Number on the payment page.`;
       
-      setQrCodeData(paymentInstructions);
+      setQrCodeData(bankDetails);
       setPaymentStatus('pending');
       setSubmitError(null);
       setSubmitSuccess(false);
@@ -182,6 +187,10 @@ After payment, submit your payment ID and mobile number on this page.`;
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-600">Bank:</span>
                         <span className="text-xs font-semibold text-slate-900">Peoples Bank</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-600">Branch:</span>
+                        <span className="text-xs font-semibold text-slate-900">Kolonawa Branch</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-600">Account Number:</span>

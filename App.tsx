@@ -1042,7 +1042,7 @@ const App = () => {
               {!userState.isPremium && userState.dailyUsage && (
                 <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
                   <span className="font-medium">
-                    {userState.dailyUsage.humanizations}/10 humanizations
+                    {10 - userState.dailyUsage.humanizations} remaining ({userState.dailyUsage.humanizations}/10 used)
                   </span>
                 </div>
               )}
@@ -1063,10 +1063,16 @@ const App = () => {
             </div>
             
             <div className="flex items-center gap-2 ml-auto w-full lg:w-auto justify-end mt-1 lg:mt-0">
-              {!userState.isPremium && userState.dailyUsage && userState.dailyUsage.humanizations >= 10 && (
-                <span className="text-xs text-rose-600 font-medium bg-rose-50 px-2 py-1 rounded border border-rose-200">
-                  Daily limit reached
-                </span>
+              {!userState.isPremium && userState.dailyUsage && (
+                userState.dailyUsage.humanizations >= 10 ? (
+                  <span className="text-xs text-rose-600 font-medium bg-rose-50 px-2 py-1 rounded border border-rose-200">
+                    Daily limit reached (0 remaining)
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-600 font-medium bg-slate-50 px-2 py-1 rounded border border-slate-200">
+                    {10 - userState.dailyUsage.humanizations} remaining
+                  </span>
+                )
               )}
               <Button 
                 variant="ghost" 

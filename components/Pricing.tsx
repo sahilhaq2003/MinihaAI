@@ -35,7 +35,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
     setSuccess(false);
 
     try {
-      const result = await processPayment(userId, "$19.00");
+      const result = await processPayment(userId, "$5.00");
       if (result.success) {
         // Payment successful - upgrade user
         setSuccess(true);
@@ -121,7 +121,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
             </div>
             
             <div className="mb-8">
-                <span className="text-5xl font-extrabold text-white tracking-tight">$19</span>
+                <span className="text-5xl font-extrabold text-white tracking-tight">$5</span>
                 <span className="text-slate-400 font-medium">/month</span>
             </div>
             
@@ -167,11 +167,16 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
                   variant="primary" 
                   className="w-full py-4 text-base shadow-lg shadow-rose-900/40 border-none bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-500 hover:to-orange-500"
                   onClick={handleUpgrade}
-                  disabled={isPremium || isProcessing}
+                  disabled={isProcessing}
               >
                   {isProcessing ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-                  ) : isPremium ? 'Active Plan' : (
+                  ) : isPremium ? (
+                    <>
+                      <QrCode className="w-4 h-4 mr-2" />
+                      Active Plan
+                    </>
+                  ) : (
                     <>
                       <QrCode className="w-4 h-4 mr-2" />
                       Pay with QR Code
@@ -188,7 +193,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
                     setIsProcessing(true);
                     setError(null);
                     try {
-                      const result = await processPayment(userId, "$19.00");
+                      const result = await processPayment(userId, "$5.00");
                       if (result.success) {
                         setSuccess(true);
                         onSubscribe();
@@ -220,7 +225,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
         <QRPayment
           isOpen={showQRPayment}
           onClose={() => setShowQRPayment(false)}
-          amount="$19.00"
+          amount="$5.00"
           userId={userId}
           onPaymentSuccess={handleQRPaymentSuccess}
         />

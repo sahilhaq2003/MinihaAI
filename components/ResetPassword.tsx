@@ -18,6 +18,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack }) => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
+  const [useTwilioVerify, setUseTwilioVerify] = useState(false);
 
   useEffect(() => {
     // Get token and email from URL (for backward compatibility)
@@ -44,10 +45,16 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack }) => {
       return;
     }
 
-    // Validate mobile number format (basic validation)
-    const mobileRegex = /^[0-9]{10,15}$/;
-    if (!mobileRegex.test(mobileNumber.replace(/\D/g, ''))) {
-      setMessage({ type: 'error', text: 'Please enter a valid mobile number (10-15 digits).' });
+    // Validate mobile number format (must include country code with +)
+    if (!mobileNumber.startsWith('+')) {
+      setMessage({ type: 'error', text: 'Please include country code with + (e.g., +1234567890 for US, +919876543210 for India).' });
+      return;
+    }
+    
+    // Validate minimum length (country code + number, at least 8 digits after +)
+    const digitsOnly = mobileNumber.substring(1).replace(/\D/g, '');
+    if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+      setMessage({ type: 'error', text: 'Please enter a valid international mobile number (8-15 digits after country code).' });
       return;
     }
 
@@ -59,6 +66,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack }) => {
       setMessage({ type: 'success', text: result.message });
       setOtpSent(true);
       setStep('verify');
+      setUseTwilioVerify(result.useTwilioVerify || false);
       
       // Show OTP in development mode (backend returns it in dev mode)
       if (result.otpCode) {
@@ -91,7 +99,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack }) => {
     setMessage(null);
 
     try {
-      const result = await verifyOTP(email, otpCode);
+      const result = await verifyOTP(email, otpCode, mobileNumber, useTwilioVerify);
       if (result.resetToken) {
         setToken(result.resetToken);
         setStep('reset');
@@ -187,16 +195,26 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onBack }) => {
               <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="tel"
-                placeholder="Mobile number (10-15 digits)"
+                placeholder="Mobile number with country code (e.g., +1234567890 or +919876543210)"
                 value={mobileNumber}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, ''); // Only numbers
+                  // Allow + and numbers only
+                  let value = e.target.value;
+                  // Keep + at the start if present
+                  if (value.startsWith('+')) {
+                    value = '+' + value.substring(1).replace(/\D/g, '');
+                  } else {
+                    value = value.replace(/\D/g, '');
+                  }
                   setMobileNumber(value);
                 }}
-                maxLength={15}
+                maxLength={20}
                 className="w-full px-4 py-3 pl-11 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                 required
               />
+              <p className="text-xs text-slate-500 mt-1">
+                Include country code (e.g., +1 for US, +91 for India, +44 for UK)
+              </p>
             </div>
             <Button type="submit" isLoading={isLoading} className="w-full">
               Send OTP

@@ -218,7 +218,7 @@ export const resendVerificationEmail = async (email: string): Promise<{ success:
 };
 
 // Request OTP via mobile number
-export const forgotPassword = async (email: string, mobileNumber: string): Promise<{ success: boolean; message: string; otpCode?: string }> => {
+export const forgotPassword = async (email: string, mobileNumber: string): Promise<{ success: boolean; message: string; otpCode?: string; useTwilioVerify?: boolean }> => {
     if (USE_REAL_BACKEND) {
         try {
             const response = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
@@ -238,13 +238,13 @@ export const forgotPassword = async (email: string, mobileNumber: string): Promi
 };
 
 // Verify OTP
-export const verifyOTP = async (email: string, otpCode: string): Promise<{ success: boolean; message: string; resetToken?: string }> => {
+export const verifyOTP = async (email: string, otpCode: string, mobileNumber?: string, useTwilioVerify?: boolean): Promise<{ success: boolean; message: string; resetToken?: string }> => {
   if (USE_REAL_BACKEND) {
     try {
       const response = await fetch(`${BACKEND_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otpCode })
+        body: JSON.stringify({ email, otpCode, mobileNumber, useTwilioVerify })
       });
       const data = await response.json();
       if (!data.success) throw new Error(data.message || "OTP verification failed");

@@ -80,6 +80,7 @@ export interface UserProfile {
   avatar?: string;
   isPremium: boolean;
   premiumExpiresAt?: string | null;
+  createdAt?: string | Date;
 }
 
 export interface Transaction {

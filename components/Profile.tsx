@@ -246,6 +246,47 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
       setTimeout(() => setPaymentStatusMessage(null), 5000);
     }
   };
+
+  // Handle invoice download
+  const handleDownloadInvoice = (transaction: Transaction) => {
+    try {
+      // Create invoice content
+      const invoiceContent = `
+INVOICE
+${transaction.invoice}
+
+Date: ${transaction.date}
+Amount: ${transaction.amount}
+Status: ${transaction.status}
+
+Customer Information:
+Name: ${user.name}
+Email: ${user.email}
+
+---
+MinihaAI
+Thank you for your business!
+      `.trim();
+
+      // Create a blob with the invoice content
+      const blob = new Blob([invoiceContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${transaction.invoice.replace('#', '')}-${transaction.date.replace(/,/g, '').replace(/\s+/g, '-')}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice. Please try again.');
+    }
+  };
   
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -312,7 +353,14 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                 
                 <div className="w-full pt-4 border-t border-slate-100 flex justify-between text-sm">
                    <span className="text-slate-500">Member since</span>
-                   <span className="font-medium text-slate-900">Oct 2024</span>
+                   <span className="font-medium text-slate-900">
+                     {user.createdAt 
+                       ? new Date(user.createdAt).toLocaleDateString('en-US', { 
+                           month: 'short', 
+                           year: 'numeric' 
+                         })
+                       : 'N/A'}
+                   </span>
                 </div>
              </div>
           </div>
@@ -476,7 +524,11 @@ export const Profile: React.FC<ProfileProps> = ({ user, history, onLogout, onUpg
                           <div className="flex items-center gap-4">
                             <span className="font-medium text-slate-900">{item.amount}</span>
                             <span className="px-2 py-1 rounded bg-green-50 text-green-700 text-xs font-bold uppercase">{item.status}</span>
-                            <button className="p-2 text-slate-400 hover:text-slate-700">
+                            <button 
+                              onClick={() => handleDownloadInvoice(item)}
+                              className="p-2 text-slate-400 hover:text-slate-700 hover:text-rose-600 transition-colors"
+                              title="Download invoice"
+                            >
                               <Download className="w-4 h-4" />
                             </button>
                           </div>

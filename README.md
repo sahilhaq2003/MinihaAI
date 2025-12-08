@@ -38,6 +38,7 @@ MinihaAI is an advanced AI-powered platform that transforms robotic AI-generated
  - ✅ Access to all tones (Academic default)
 - ✅ Basic vocabulary levels
 - ✅ Intensity up to 70%
+- ✅ Up to 1,000 words per humanization (free plan)
 
 ### Pro Plan ($5/month)
 - 🚀 **Unlimited** humanizations
@@ -125,6 +126,7 @@ MinihaAI is an advanced AI-powered platform that transforms robotic AI-generated
 #### Text Humanization
 - Paste your AI-generated text in the input area
  - Select your preferred tone (Academic default; all tones available for free users)
+- Keep inputs to 1,000 words or fewer on the free plan
 - Adjust vocabulary level and intensity (if Pro)
 - Click "Humanize" to transform your text
 - Copy the humanized output

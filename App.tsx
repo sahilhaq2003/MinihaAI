@@ -399,6 +399,13 @@ const App = () => {
     return usage;
   };
 
+  // Helper to count words in the current input
+  const getWordCount = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return 0;
+    return trimmed.split(/\s+/).length;
+  };
+
   // User Persistence
   const [userState, setUserState] = useState<UserState>(() => {
     const saved = localStorage.getItem('miniha_user');
@@ -534,7 +541,15 @@ const App = () => {
     
     // Check premium restrictions
     if (!userState.isPremium) {
-      // Free users: all tones are allowed now. Keep intensity and daily-limit restrictions.
+      // Free users: all tones are allowed now. Keep intensity, per-request word limit, and daily-limit restrictions.
+
+      // Check per-request word limit (1000 words max for free users)
+      const wordCount = getWordCount(input);
+      if (wordCount > 1000) {
+        alert(`Free plan limit: up to 1000 words per humanization. Your input has ${wordCount} words.`);
+        return;
+      }
+
       // Check intensity restriction
       if (intensity > 70) {
         alert("Intensity above 70% requires Pro plan. Upgrade to unlock advanced settings.");

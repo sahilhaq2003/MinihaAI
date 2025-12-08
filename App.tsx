@@ -264,15 +264,11 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
                     isLoading={isLoading && !!email}
                 >
                     {authMode === 'signup' ? 'Create Account' : 'Log In'}
-                <Button 
-                  onClick={handleHumanize} 
-                  isLoading={isProcessing}
-                  disabled={
-                    (!userState.isPremium && userState.dailyUsage && userState.dailyUsage.humanizations >= 10)
-                    || isFreeWordLimitExceeded
-                  }
-                  className="shadow-rose-500/20 w-full sm:w-auto h-10"
-                >
+                </Button>
+                {authMode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={onForgotPassword}
                     className="w-full mt-3 text-sm text-rose-600 hover:text-rose-700 font-medium"
                   >
                     Forgot password?

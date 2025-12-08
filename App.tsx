@@ -265,6 +265,7 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
                 >
                     {authMode === 'signup' ? 'Create Account' : 'Log In'}
                 </Button>
+                
                 {authMode === 'login' && (
                   <button
                     type="button"
@@ -397,16 +398,6 @@ const App = () => {
     localStorage.setItem('miniha_daily_usage', JSON.stringify(usage));
     return usage;
   };
-
-  // Helper to count words in the current input
-  const getWordCount = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return 0;
-    return trimmed.split(/\s+/).length;
-  };
-
-  const currentWordCount = getWordCount(input);
-  const isFreeWordLimitExceeded = !userState.isPremium && currentWordCount > 1000;
 
   // User Persistence
   const [userState, setUserState] = useState<UserState>(() => {
@@ -543,15 +534,7 @@ const App = () => {
     
     // Check premium restrictions
     if (!userState.isPremium) {
-      // Free users: all tones are allowed now. Keep intensity, per-request word limit, and daily-limit restrictions.
-
-      // Check per-request word limit (1000 words max for free users)
-      const wordCount = getWordCount(input);
-      if (wordCount > 1000) {
-        alert(`Free plan limit: up to 1000 words per humanization. Your input has ${wordCount} words.`);
-        return;
-      }
-
+      // Free users: all tones are allowed now. Keep intensity and daily-limit restrictions.
       // Check intensity restriction
       if (intensity > 70) {
         alert("Intensity above 70% requires Pro plan. Upgrade to unlock advanced settings.");
@@ -1040,16 +1023,11 @@ const App = () => {
               </div>
               
               {/* Usage Indicator for Free Users */}
-              {!userState.isPremium && (
-                <div className="flex items-center gap-2 text-xs bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
-                  {userState.dailyUsage && (
-                    <span className="font-medium text-slate-600">
-                      {10 - userState.dailyUsage.humanizations} remaining ({userState.dailyUsage.humanizations}/10 used)
-                    </span>
-                  )}
-                  {isFreeWordLimitExceeded && (
-                    <span className="text-rose-600 font-semibold">Word limit 1000 (current: {currentWordCount})</span>
-                  )}
+              {!userState.isPremium && userState.dailyUsage && (
+                <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                  <span className="font-medium">
+                    {10 - userState.dailyUsage.humanizations} remaining ({userState.dailyUsage.humanizations}/10 used)
+                  </span>
                 </div>
               )}
 

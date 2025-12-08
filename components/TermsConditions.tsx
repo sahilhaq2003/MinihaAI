@@ -57,7 +57,7 @@ export const TermsConditions: React.FC<TermsConditionsProps> = ({ onBack }) => {
               <ul className="list-disc pl-6 mb-4 text-slate-700 space-y-2">
               <li><strong>Text Humanization:</strong> Transforming AI-generated text into natural, human-like writing with customizable tones and vocabulary levels</li>
               <li><strong>AI Detection:</strong> Analyzing text to determine the probability of AI generation and identifying potential AI models</li>
-              <li><strong>Free Tier:</strong> Limited daily usage (10 humanizations, 3 detections), up to 1,000 words per humanization, access to all tones (Academic default)</li>
+              <li><strong>Free Tier:</strong> Limited daily usage (10 humanizations, 3 detections) with access to all tones (Academic default)</li>
               <li><strong>Pro Plan:</strong> Unlimited usage with access to priority processing, advanced vocabulary levels, and other premium benefits</li>
             </ul>
             <p className="text-slate-700 leading-relaxed mb-6">

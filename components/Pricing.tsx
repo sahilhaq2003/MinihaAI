@@ -97,12 +97,6 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
               <div className="w-6 h-6 rounded-full bg-green-50 text-green-600 flex items-center justify-center mr-3 flex-shrink-0">
                   <Check className="w-3.5 h-3.5" />
               </div>
-              Up to 1,000 words per humanization
-            </li>
-            <li className="flex items-center text-slate-700 text-sm">
-              <div className="w-6 h-6 rounded-full bg-green-50 text-green-600 flex items-center justify-center mr-3 flex-shrink-0">
-                  <Check className="w-3.5 h-3.5" />
-              </div>
               Access to all tones
             </li>
           </ul>

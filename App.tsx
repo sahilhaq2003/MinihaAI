@@ -264,12 +264,15 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
                     isLoading={isLoading && !!email}
                 >
                     {authMode === 'signup' ? 'Create Account' : 'Log In'}
-                </Button>
-                
-                {authMode === 'login' && (
-                  <button
-                    type="button"
-                    onClick={onForgotPassword}
+                <Button 
+                  onClick={handleHumanize} 
+                  isLoading={isProcessing}
+                  disabled={
+                    (!userState.isPremium && userState.dailyUsage && userState.dailyUsage.humanizations >= 10)
+                    || isFreeWordLimitExceeded
+                  }
+                  className="shadow-rose-500/20 w-full sm:w-auto h-10"
+                >
                     className="w-full mt-3 text-sm text-rose-600 hover:text-rose-700 font-medium"
                   >
                     Forgot password?
@@ -405,6 +408,9 @@ const App = () => {
     if (!trimmed) return 0;
     return trimmed.split(/\s+/).length;
   };
+
+  const currentWordCount = getWordCount(input);
+  const isFreeWordLimitExceeded = !userState.isPremium && currentWordCount > 1000;
 
   // User Persistence
   const [userState, setUserState] = useState<UserState>(() => {
@@ -1038,11 +1044,16 @@ const App = () => {
               </div>
               
               {/* Usage Indicator for Free Users */}
-              {!userState.isPremium && userState.dailyUsage && (
-                <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
-                  <span className="font-medium">
-                    {10 - userState.dailyUsage.humanizations} remaining ({userState.dailyUsage.humanizations}/10 used)
-                  </span>
+              {!userState.isPremium && (
+                <div className="flex items-center gap-2 text-xs bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                  {userState.dailyUsage && (
+                    <span className="font-medium text-slate-600">
+                      {10 - userState.dailyUsage.humanizations} remaining ({userState.dailyUsage.humanizations}/10 used)
+                    </span>
+                  )}
+                  {isFreeWordLimitExceeded && (
+                    <span className="text-rose-600 font-semibold">Word limit 1000 (current: {currentWordCount})</span>
+                  )}
                 </div>
               )}
 

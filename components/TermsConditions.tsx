@@ -54,11 +54,11 @@ export const TermsConditions: React.FC<TermsConditionsProps> = ({ onBack }) => {
             <p className="text-slate-700 leading-relaxed mb-4">
               MinihaAI provides AI-powered text humanization and AI content detection services. Our services include:
             </p>
-            <ul className="list-disc pl-6 mb-4 text-slate-700 space-y-2">
+              <ul className="list-disc pl-6 mb-4 text-slate-700 space-y-2">
               <li><strong>Text Humanization:</strong> Transforming AI-generated text into natural, human-like writing with customizable tones and vocabulary levels</li>
               <li><strong>AI Detection:</strong> Analyzing text to determine the probability of AI generation and identifying potential AI models</li>
-              <li><strong>Free Tier:</strong> Limited daily usage (10 humanizations, 3 detections) with standard tone only</li>
-              <li><strong>Pro Plan:</strong> Unlimited usage with access to all 7 tones, advanced vocabulary levels, and priority processing</li>
+              <li><strong>Free Tier:</strong> Limited daily usage (10 humanizations, 3 detections) with access to all tones (Academic default)</li>
+              <li><strong>Pro Plan:</strong> Unlimited usage with access to priority processing, advanced vocabulary levels, and other premium benefits</li>
             </ul>
             <p className="text-slate-700 leading-relaxed mb-6">
               We strive to provide accurate and reliable services, but we do not guarantee 100% accuracy in AI detection or humanization results, that humanized text will pass all AI detection systems, or uninterrupted or error-free service availability.

@@ -97,7 +97,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSubscribe, onPaymentSuccess,
               <div className="w-6 h-6 rounded-full bg-green-50 text-green-600 flex items-center justify-center mr-3 flex-shrink-0">
                   <Check className="w-3.5 h-3.5" />
               </div>
-              Standard Tone only
+              Access to all tones
             </li>
           </ul>
           <Button variant="outline" className="w-full py-3" disabled={!isPremium}>

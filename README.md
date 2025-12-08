@@ -35,7 +35,7 @@ MinihaAI is an advanced AI-powered platform that transforms robotic AI-generated
 ### Free Tier
 - ✅ 10 humanizations per day
 - ✅ 3 AI detections per day
-- ✅ Standard tone only
+ - ✅ Access to all tones (Academic default)
 - ✅ Basic vocabulary levels
 - ✅ Intensity up to 70%
 
@@ -124,7 +124,7 @@ MinihaAI is an advanced AI-powered platform that transforms robotic AI-generated
 
 #### Text Humanization
 - Paste your AI-generated text in the input area
-- Select your preferred tone (Standard for free users)
+ - Select your preferred tone (Academic default; all tones available for free users)
 - Adjust vocabulary level and intensity (if Pro)
 - Click "Humanize" to transform your text
 - Copy the humanized output

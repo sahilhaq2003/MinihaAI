@@ -344,7 +344,8 @@ const App = () => {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [tone, setTone] = useState<Tone>(Tone.STANDARD);
+  // Default tone changed to Academic
+  const [tone, setTone] = useState<Tone>(Tone.ACADEMIC);
   
   // Advanced Settings State
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -533,13 +534,7 @@ const App = () => {
     
     // Check premium restrictions
     if (!userState.isPremium) {
-      // Check tone restriction
-      if (tone !== Tone.STANDARD) {
-        alert("Standard tone only available on Free plan. Upgrade to Pro for all 7 tones.");
-        setView(View.PRICING);
-        return;
-      }
-      
+      // Free users: all tones are allowed now. Keep intensity and daily-limit restrictions.
       // Check intensity restriction
       if (intensity > 70) {
         alert("Intensity above 70% requires Pro plan. Upgrade to unlock advanced settings.");
@@ -1012,28 +1007,14 @@ const App = () => {
               
               <div className="h-5 w-px bg-slate-200 hidden lg:block"></div>
 
-              {/* Basic Tone Select */}
+              {/* Basic Tone Select (all tones available for free users) */}
               <div className="relative group flex-1 sm:flex-none">
-                <select 
+                <select
                   value={tone}
-                  onChange={(e) => {
-                    if (!userState.isPremium && e.target.value !== Tone.STANDARD) {
-                      alert("Standard tone only available on Free plan. Upgrade to Pro for all 7 tones.");
-                      return;
-                    }
-                    setTone(e.target.value as Tone);
-                  }}
-                  disabled={!userState.isPremium && tone !== Tone.STANDARD}
-                  className={`appearance-none block w-full sm:w-40 rounded-lg border-slate-200 text-sm font-medium focus:border-rose-500 focus:ring-rose-500 bg-white py-2 pl-3 pr-8 shadow-sm hover:border-slate-300 transition-colors h-10 ${
-                    !userState.isPremium && tone !== Tone.STANDARD 
-                      ? 'cursor-not-allowed opacity-50' 
-                      : 'cursor-pointer text-slate-700'
-                  }`}
-                >
+                  onChange={(e) => setTone(e.target.value as Tone)}
+                  className={`appearance-none block w-full sm:w-40 rounded-lg border-slate-200 text-sm font-medium focus:border-rose-500 focus:ring-rose-500 bg-white py-2 pl-3 pr-8 shadow-sm hover:border-slate-300 transition-colors h-10 cursor-pointer text-slate-700`}>
                   {Object.values(Tone).map((t) => (
-                    <option key={t} value={t} disabled={!userState.isPremium && t !== Tone.STANDARD}>
-                      {t} {!userState.isPremium && t !== Tone.STANDARD ? '(Pro)' : ''}
-                    </option>
+                    <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">

@@ -5,7 +5,7 @@ import { UserProfile, Transaction } from "../types";
 const MOCK_DELAY = 800;
 
 // Set to true to use the real SQLite backend server
-const USE_REAL_BACKEND = true; 
+const USE_REAL_BACKEND = true;
 
 // Use environment variable for production, fallback to localhost for development
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
@@ -22,229 +22,234 @@ const saveLocalUser = (email: string, userData: any) => {
   localStorage.setItem('miniha_users_db', JSON.stringify(users));
 };
 
-export const signupWithEmail = async (email: string, password: string): Promise<UserProfile> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/auth/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+export const signupWithEmail = async (email: string, password: string): Promise<any> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Signup failed");
-            return data.user;
-        } catch (error) {
-            console.error("Backend signup error:", error);
-            throw error;
-        }
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Signup failed");
+      return data; // Return full data including requiresOtp
+    } catch (error) {
+      console.error("Backend signup error:", error);
+      throw error;
     }
+  }
 
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const users = getLocalUsers();
-            if (users[email]) {
-                reject(new Error("User already exists with this email."));
-                return;
-            }
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const users = getLocalUsers();
+      if (users[email]) {
+        reject(new Error("User already exists with this email."));
+        return;
+      }
 
-            const newUser = {
-                id: "user_" + Date.now(),
-                name: email.split('@')[0], // Default name from email
-                email: email,
-                password: password, 
-                isPremium: false,
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
-            };
+      const newUser = {
+        id: "user_" + Date.now(),
+        name: email.split('@')[0], // Default name from email
+        email: email,
+        password: password,
+        isPremium: false,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
+      };
 
-            saveLocalUser(email, newUser);
+      saveLocalUser(email, newUser);
 
-            // Return profile (without password)
-            const { password: _, ...profile } = newUser;
-            resolve(profile);
-        }, MOCK_DELAY);
-    });
+      // Return profile (without password)
+      const { password: _, ...profile } = newUser;
+      resolve(profile);
+    }, MOCK_DELAY);
+  });
 };
 
 export const loginWithEmail = async (email: string, password: string): Promise<UserProfile> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-            const data = await response.json();
-            
-            // Handle email verification required
-            if (response.status === 403 && data.requiresVerification) {
-                throw new Error(data.message || "Please verify your email address before logging in.");
-            }
-            
-            if (!data.success) throw new Error(data.message || "Login failed");
-            return data.user;
-        } catch (error) {
-            console.error("Backend login error:", error);
-            throw error;
-        }
+      const data = await response.json();
+
+      // Handle email verification required
+      if (response.status === 403 && data.requiresVerification) {
+        throw new Error(data.message || "Please verify your email address before logging in.");
+      }
+
+      if (!data.success) throw new Error(data.message || "Login failed");
+      return data.user;
+    } catch (error) {
+      console.error("Backend login error:", error);
+      throw error;
     }
+  }
 
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const users = getLocalUsers();
-            const user = users[email];
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const users = getLocalUsers();
+      const user = users[email];
 
-            if (!user) {
-                reject(new Error("User not found. Please sign up first."));
-                return;
-            }
+      if (!user) {
+        reject(new Error("User not found. Please sign up first."));
+        return;
+      }
 
-            if (user.password !== password) {
-                reject(new Error("Invalid password."));
-                return;
-            }
+      if (user.password !== password) {
+        reject(new Error("Invalid password."));
+        return;
+      }
 
-            // Return profile (without password)
-            const { password: _, ...profile } = user;
-            resolve(profile);
-        }, MOCK_DELAY);
-    });
+      // Return profile (without password)
+      const { password: _, ...profile } = user;
+      resolve(profile);
+    }, MOCK_DELAY);
+  });
 };
 
 export const getBillingHistory = async (userId: string): Promise<Transaction[]> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/user/${userId}/transactions`);
-            const data = await response.json();
-            if (!data.success) return [];
-            return data.transactions;
-        } catch (error) {
-            console.error("Error fetching billing history:", error);
-            return [];
-        }
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/user/${userId}/transactions`);
+      const data = await response.json();
+      if (!data.success) return [];
+      return data.transactions;
+    } catch (error) {
+      console.error("Error fetching billing history:", error);
+      return [];
     }
+  }
 
-    // Mock Data for Demo
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve([
-                { id: 'tx_1', date: 'Oct 24, 2024', amount: '$19.00', status: 'Paid', invoice: '#INV-2024-001' },
-                { id: 'tx_2', date: 'Sep 24, 2024', amount: '$19.00', status: 'Paid', invoice: '#INV-2024-002' },
-            ]);
-        }, 500);
-    });
+  // Mock Data for Demo
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        { id: 'tx_1', date: 'Oct 24, 2024', amount: '$19.00', status: 'Paid', invoice: '#INV-2024-001' },
+        { id: 'tx_2', date: 'Sep 24, 2024', amount: '$19.00', status: 'Paid', invoice: '#INV-2024-002' },
+      ]);
+    }, 500);
+  });
 }
 
 export const logoutUser = async (): Promise<void> => {
-    // Simulate server-side session cleanup
-    return new Promise(resolve => setTimeout(resolve, 500));
+  // Simulate server-side session cleanup
+  return new Promise(resolve => setTimeout(resolve, 500));
 };
 
 // Process payment (free simulation - no payment processor needed)
 export const processPayment = async (userId: string, amount: string): Promise<{ success: boolean; user?: any; transaction?: Transaction }> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/payment/process`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, amount })
-            });
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/payment/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, amount })
+      });
 
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Payment processing failed");
-            
-            return data;
-        } catch (error) {
-            console.error("Payment processing error:", error);
-            throw error;
-        }
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Payment processing failed");
+
+      return data;
+    } catch (error) {
+      console.error("Payment processing error:", error);
+      throw error;
     }
+  }
 
-    // Mock for demo
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                success: true,
-                user: { id: userId, isPremium: true },
-                transaction: {
-                    id: 'mock_' + Date.now(),
-                    user_id: userId,
-                    amount: amount,
-                    status: 'Paid',
-                    date: new Date().toISOString(),
-                    invoice_id: '#INV-MOCK',
-                    plan_type: 'Pro Plan'
-                }
-            });
-        }, 1500);
-    });
+  // Mock for demo
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        success: true,
+        user: { id: userId, isPremium: true },
+        transaction: {
+          id: 'mock_' + Date.now(),
+          user_id: userId,
+          amount: amount,
+          status: 'Paid',
+          date: new Date().toISOString(),
+          invoice_id: '#INV-MOCK',
+          plan_type: 'Pro Plan'
+        }
+      });
+    }, 1500);
+  });
 };
 
 // Verify email
 export const verifyEmail = async (token: string, email: string): Promise<{ success: boolean; message: string }> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`);
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Email verification failed");
-            return data;
-        } catch (error) {
-            console.error("Email verification error:", error);
-            throw error;
-        }
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Email verification failed");
+      return data;
+    } catch (error) {
+      console.error("Email verification error:", error);
+      throw error;
     }
-    return { success: true, message: "Email verified" };
+  }
+  return { success: true, message: "Email verified" };
 };
 
 // Resend verification email
 export const resendVerificationEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/auth/resend-verification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Failed to resend verification email");
-            return data;
-        } catch (error) {
-            console.error("Resend verification error:", error);
-            throw error;
-        }
-    }
-    return { success: true, message: "Verification email sent" };
-};
-
-// Request OTP via mobile number
-export const forgotPassword = async (email: string, mobileNumber: string): Promise<{ success: boolean; message: string; otpCode?: string; useTwilioVerify?: boolean }> => {
-    if (USE_REAL_BACKEND) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, mobileNumber })
-            });
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message || "Failed to send OTP");
-            return data;
-        } catch (error) {
-            console.error("Forgot password error:", error);
-            throw error;
-        }
-    }
-    return { success: true, message: "OTP sent" };
-};
-
-// Verify OTP
-export const verifyOTP = async (email: string, otpCode: string, mobileNumber?: string, useTwilioVerify?: boolean): Promise<{ success: boolean; message: string; resetToken?: string }> => {
   if (USE_REAL_BACKEND) {
     try {
+      const response = await fetch(`${BACKEND_URL}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Failed to resend verification email");
+      return data;
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      throw error;
+    }
+  }
+  return { success: true, message: "Verification email sent" };
+};
+
+// Request OTP via Email
+export const forgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Failed to send OTP");
+      return data;
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      throw error;
+    }
+  }
+  return { success: true, message: "OTP sent" };
+};
+
+// Verify OTP (Generic)
+export const verifyOTP = async (email: string, otpCode: string): Promise<{ success: boolean; message: string; user?: any }> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      // We can use verify-otp for signup verification, or logic validation.
+      // For reset password, the final reset API verifies the OTP.
+      // But we might want a 'validate-otp' step if the UI has 3 steps.
+      // Actually, for reset password, we can just skip to Reset step or validate first.
+      // Let's assume we use this just for Signup or generic validation.
       const response = await fetch(`${BACKEND_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otpCode, mobileNumber, useTwilioVerify })
+        body: JSON.stringify({ email, otpCode })
       });
       const data = await response.json();
       if (!data.success) throw new Error(data.message || "OTP verification failed");
@@ -254,17 +259,17 @@ export const verifyOTP = async (email: string, otpCode: string, mobileNumber?: s
       throw error;
     }
   }
-  return { success: true, message: "OTP verified", resetToken: "mock_token" };
+  return { success: true, message: "OTP verified" };
 };
 
-// Reset password with token
-export const resetPassword = async (token: string, email: string, newPassword: string, confirmPassword: string): Promise<{ success: boolean; message: string }> => {
+// Reset password with OTP
+export const resetPassword = async (otp: string, email: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
   if (USE_REAL_BACKEND) {
     try {
       const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, email, newPassword, confirmPassword })
+        body: JSON.stringify({ otp, email, newPassword })
       });
       const data = await response.json();
       if (!data.success) throw new Error(data.message || "Password reset failed");

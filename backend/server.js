@@ -76,7 +76,7 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING },
   name: { type: DataTypes.STRING },
-  picture: { type: DataTypes.STRING(1000) },
+  picture: { type: DataTypes.TEXT('medium') }, // MEDIUMTEXT supports up to 16MB (enough for base64 images)
   mobile_number: { type: DataTypes.STRING },
   provider: { type: DataTypes.STRING, defaultValue: 'email' },
   is_premium: { type: DataTypes.BOOLEAN, defaultValue: false },
@@ -248,24 +248,7 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    if (clientIP !== 'unknown') {
-      let ipTracking = await IPTracking.findByPk(clientIP);
 
-      if (!ipTracking) {
-        ipTracking = IPTracking.build({
-          ip_address: clientIP,
-          account_count: 0,
-          last_account_created: new Date()
-        });
-      }
-
-      if (ipTracking.account_count >= 2) {
-        return res.status(429).json({
-          success: false,
-          message: 'Account creation limit reached.'
-        });
-      }
-    }
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -273,9 +256,11 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpires = new Date();
-    verificationTokenExpires.setHours(verificationTokenExpires.getHours() + 24);
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date();
+    otpExpires.setMinutes(otpExpires.getMinutes() + 15); // 15 mins expiry
 
     const user = User.build({
       id: uuidv4(),
@@ -286,8 +271,8 @@ app.post('/api/auth/signup', async (req, res) => {
       provider: 'email',
       is_premium: false,
       email_verified: false,
-      verification_token: verificationToken,
-      verification_token_expires: verificationTokenExpires,
+      otp_code: otpCode,
+      otp_expires: otpExpires,
       created_at: new Date()
     });
 
@@ -314,21 +299,83 @@ app.post('/api/auth/signup', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully! Please check your email.',
-      user: {
-        id: savedUser.id,
-        name: savedUser.name,
-        email: savedUser.email,
-        avatar: savedUser.picture,
-        isPremium: savedUser.is_premium
-      }
+      message: 'Account created! Please check your email for the OTP.',
+      requiresOtp: true,
+      email: savedUser.email
     });
 
-    // Verification email logic (omitted for brevity, same as before)
+    // Send OTP Email
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #e11d48; text-align: center;">Verify Your Account</h2>
+        <p>Hi ${savedUser.name},</p>
+        <p>Thank you for signing up for MinihaAI. Please use the following One-Time Password (OTP) to verify your account:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <span style="background-color: #fce7f3; color: #e11d48; padding: 12px 24px; font-size: 24px; letter-spacing: 5px; font-weight: bold; border-radius: 8px; border: 1px dashed #e11d48;">${otpCode}</span>
+        </div>
+        
+        <p>This code will expire in 15 minutes.</p>
+        <p style="font-size: 14px; color: #666;">If you didn't request this code, please ignore this email.</p>
+      </div>
+    `;
+
+    sendEmail(email, 'Your MinihaAI Verification Code', emailHtml)
+      .catch(err => console.error(`❌ Error sending email to ${email}:`, err));
 
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ success: false, message: "Server error during signup" });
+  }
+});
+
+// VERIFY OTP (during signup)
+app.post('/api/auth/verify-otp', async (req, res) => {
+  const { email, otpCode } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.email_verified) {
+      return res.json({
+        success: true,
+        message: 'Email already verified',
+        user: { id: user.id, name: user.name, email: user.email, avatar: user.picture, isPremium: user.is_premium }
+      });
+    }
+
+    if (user.otp_code !== otpCode) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    if (new Date() > new Date(user.otp_expires)) {
+      return res.status(400).json({ success: false, message: 'OTP expired' });
+    }
+
+    // OTP Valid
+    user.email_verified = true;
+    user.otp_code = null;
+    user.otp_expires = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully!',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.picture,
+        isPremium: user.is_premium
+      }
+    });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ success: false, message: "Server error during verification" });
   }
 });
 
@@ -364,6 +411,114 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ success: false, message: "Server error during login" });
+  }
+});
+
+// CHANGE PASSWORD (for logged-in users)
+app.post('/api/auth/change-password', async (req, res) => {
+  const { userId, currentPassword, newPassword } = req.body;
+
+  try {
+    if (!userId || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID, current password, and new password are required'
+      });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    res.status(500).json({ success: false, message: "Server error while changing password" });
+  }
+});
+
+// FORGOT PASSWORD (OTP)
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date();
+    otpExpires.setMinutes(otpExpires.getMinutes() + 15);
+
+    user.otp_code = otpCode;
+    user.otp_expires = otpExpires;
+    await user.save();
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #e11d48; text-align: center;">Reset Your Password</h2>
+        <p>Hi ${user.name},</p>
+        <p>You requested a password reset. Use the code below to reset your password:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <span style="background-color: #fce7f3; color: #e11d48; padding: 12px 24px; font-size: 24px; letter-spacing: 5px; font-weight: bold; border-radius: 8px; border: 1px dashed #e11d48;">${otpCode}</span>
+        </div>
+        <p>This code expires in 15 minutes.</p>
+      </div>
+    `;
+
+    try {
+      await sendEmail(email, 'Reset Password Code', emailHtml);
+    } catch (e) {
+      console.error("Email send error", e);
+    }
+
+    res.json({ success: true, message: 'OTP sent to email. Please check your inbox.' });
+
+  } catch (error) {
+    console.error("Forgot pass error:", error);
+    res.status(500).json({ success: false, message: 'Error sending OTP' });
+  }
+});
+
+// RESET PASSWORD (Confirm OTP)
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (user.otp_code !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+    if (new Date() > new Date(user.otp_expires)) {
+      return res.status(400).json({ success: false, message: 'OTP expired' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.otp_code = null;
+    user.otp_expires = null;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successful. You can now login.' });
+  } catch (err) {
+    console.error("Reset pass error:", err);
+    res.status(500).json({ success: false, message: 'Reset failed' });
   }
 });
 
@@ -644,12 +799,32 @@ app.post('/api/ai/evaluate', async (req, res) => {
 // --- USER PHOTO UPDATE ---
 app.put('/api/user/:userId/photo', async (req, res) => {
   const { userId } = req.params;
-  const { photo } = req.body; // Expecting base64 string
+  const { photo } = req.body; // Expecting base64 string or URL
 
   try {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
+    // Validate photo input
+    if (!photo || typeof photo !== 'string') {
+      return res.status(400).json({ success: false, message: 'Invalid photo data' });
+    }
+
+    // If it's a base64 image, validate size (max 1MB to prevent database bloat)
+    if (photo.startsWith('data:image')) {
+      const base64Data = photo.split(',')[1] || photo;
+      const sizeInBytes = (base64Data.length * 3) / 4;
+      const maxSizeInBytes = 1024 * 1024; // 1MB
+
+      if (sizeInBytes > maxSizeInBytes) {
+        return res.status(400).json({
+          success: false,
+          message: 'Image too large. Please use an image smaller than 1MB.'
+        });
+      }
+    }
+
+    // Update user picture
     user.picture = photo;
     await user.save();
 
@@ -669,6 +844,7 @@ app.put('/api/user/:userId/photo', async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to update photo" });
   }
 });
+
 
 // --- ADMIN ROUTES ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
@@ -773,6 +949,26 @@ app.get('/api/user/:userId', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Error fetching user" });
+  }
+});
+
+// DELETE USER
+app.delete('/api/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Delete user
+    await user.destroy();
+
+    res.status(200).json({ success: true, message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error("Delete Account Error:", error);
+    res.status(500).json({ success: false, message: "Error deleting account" });
   }
 });
 

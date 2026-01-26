@@ -11,36 +11,218 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsConditions } from './components/TermsConditions';
 import { AdminDashboard } from './components/AdminDashboard';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
-import { logoutUser, signupWithEmail, loginWithEmail } from './services/authService';
+import { logoutUser, signupWithEmail, loginWithEmail, verifyOTP } from './services/authService';
 import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary, DailyUsage } from './types';
 import {
-  Wand2,
-  Copy,
-  RotateCcw,
-  ArrowRightLeft,
-  Quote,
-  Check,
-  Sparkles,
-  ScanSearch,
-  Activity,
-  BarChart3,
-  CheckCircle2,
-  XCircle,
-  Settings2,
-  ChevronDown,
-  ChevronUp,
-  AlertCircle,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  Lock,
-  Mail,
-  PenLine,
-  FileText,
-  Key,
-  Upload,
-  X
+  Wand2, Copy, RotateCcw, ArrowRightLeft, Quote, Check, Sparkles, ScanSearch, Activity, BarChart3, CheckCircle2,
+  XCircle, Settings2, ChevronDown, ChevronUp, AlertCircle, ArrowRight, ShieldCheck, Zap, Lock, Mail, PenLine, FileText, Key, Upload, X
 } from 'lucide-react';
+
+// --- Auth Page Component ---
+const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => void; onForgotPassword: () => void }> = ({ onLoginSuccess, onBack, onForgotPassword }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  // OTP State
+  const [showOtp, setShowOtp] = useState(false);
+  const [otp, setOtp] = useState('');
+
+  useEffect(() => {
+    // Clear error when switching modes
+    setError(null);
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowOtp(false);
+    setOtp('');
+  }, [authMode]);
+
+  const handleEmailAuth = async () => {
+    if ((!email || !password || (authMode === 'signup' && !confirmPassword)) && !showOtp) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (authMode === 'signup' && !showOtp && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (showOtp && !otp) {
+      setError("Please enter the verification code.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      let result;
+      if (authMode === 'signup') {
+        if (!showOtp) {
+          // Signup Step 1: Send OTP
+          result = await signupWithEmail(email, password);
+          if (result.requiresOtp) {
+            setShowOtp(true);
+            setError("Verification code sent to email!"); // Show as notification
+          } else if (result.user) {
+            onLoginSuccess(result.user);
+          }
+        } else {
+          // Signup Step 2: Verify OTP
+          result = await verifyOTP(email, otp);
+          if (result.success && result.user) {
+            onLoginSuccess(result.user);
+          }
+        }
+      } else {
+        // Login
+        result = await loginWithEmail(email, password);
+        onLoginSuccess(result);
+      }
+    } catch (err: any) {
+      if (err.message && err.message.includes('verify your email')) {
+        setError(err.message);
+      } else {
+        setError(err.message || "Authentication failed");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+        <div className="p-6 sm:p-8">
+          <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="w-8 h-8 text-rose-600" />
+          </div>
+
+          <div className="flex gap-4 border-b border-slate-100 mb-6">
+            <button
+              onClick={() => setAuthMode('signup')}
+              disabled={showOtp}
+              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'signup' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'} ${showOtp ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Create Account
+              {authMode === 'signup' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
+            </button>
+            <button
+              onClick={() => setAuthMode('login')}
+              disabled={showOtp}
+              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'login' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'} ${showOtp ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Log In
+              {authMode === 'login' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
+            </button>
+          </div>
+
+          <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">
+            {showOtp ? 'Verify Email' : (authMode === 'signup' ? 'Get started for free' : 'Welcome back')}
+          </h2>
+          <p className="text-slate-500 mb-8 text-center text-sm">
+            {showOtp
+              ? `Enter the code sent to ${email}`
+              : (authMode === 'signup'
+                ? 'Join thousands of creators writing undetectable text.'
+                : 'Sign in to access your history and saved tones.')}
+          </p>
+
+          {error && (
+            <div className={`mb-4 p-3 ${error.includes('sent to email') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'} text-xs rounded-lg flex items-center gap-2`}>
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {!showOtp ? (
+              <>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                />
+                {authMode === 'signup' && (
+                  <input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  />
+                )}
+              </>
+            ) : (
+              <input
+                type="text"
+                placeholder="Enter 6-digit Code"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-center text-lg tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                autoFocus
+              />
+            )}
+
+            <Button
+              variant="primary"
+              className="w-full py-3 text-sm shadow-lg shadow-rose-900/20"
+              onClick={handleEmailAuth}
+              isLoading={isLoading}
+            >
+              {showOtp ? 'Verify & Continue' : (authMode === 'signup' ? 'Create Account' : 'Log In')}
+            </Button>
+
+            {!showOtp && authMode === 'login' && (
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="w-full mt-3 text-sm text-rose-600 hover:text-rose-700 font-medium"
+              >
+                Forgot password?
+              </button>
+            )}
+
+            {showOtp && (
+              <button
+                type="button"
+                onClick={() => setShowOtp(false)}
+                className="w-full mt-3 text-sm text-slate-400 hover:text-slate-600"
+              >
+                Back to Signup
+              </button>
+            )}
+          </div>
+          <div className="mt-6 text-xs text-slate-400 text-center">
+            By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-slate-600">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-600">Privacy Policy</span>.
+          </div>
+        </div>
+        <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
+          <button onClick={onBack} className="text-sm text-slate-500 hover:text-slate-800 font-medium">
+            Back to Home
+          </button>
+        </div>
+      </div>
+      <footer className="absolute bottom-4 left-0 right-0 text-center text-slate-400 text-xs">
+        © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
+      </footer>
+    </div>
+  );
+};
 
 // Custom MinihaAI Logo Component (using favicon design)
 const MinihaAILogo: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => {
@@ -151,148 +333,7 @@ const LandingPage: React.FC<{ onGetStarted: () => void; onNavigate: (view: View)
   );
 };
 
-// --- Auth Page Component ---
-const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => void; onForgotPassword: () => void }> = ({ onLoginSuccess, onBack, onForgotPassword }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Clear error when switching modes
-    setError(null);
-    setEmail('');
-    setPassword('');
-  }, [authMode]);
-
-  const handleEmailAuth = async () => {
-    if (!email || !password) {
-      setError("Please fill in all fields.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      let user;
-      if (authMode === 'signup') {
-        user = await signupWithEmail(email, password);
-        // After successful signup, automatically log the user in
-        if (user) {
-          // User is automatically logged in after account creation
-          onLoginSuccess(user);
-          return; // Exit early after successful signup and login
-        }
-      } else {
-        user = await loginWithEmail(email, password);
-        onLoginSuccess(user);
-      }
-    } catch (err: any) {
-      // Check if it's an email verification error
-      if (err.message && err.message.includes('verify your email')) {
-        setError(err.message + ' Click "Resend" below to get a new verification email.');
-      } else {
-        setError(err.message || "Authentication failed");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-        <div className="p-6 sm:p-8">
-          <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Sparkles className="w-8 h-8 text-rose-600" />
-          </div>
-
-          <div className="flex gap-4 border-b border-slate-100 mb-6">
-            <button
-              onClick={() => setAuthMode('signup')}
-              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'signup' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Create Account
-              {authMode === 'signup' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
-            </button>
-            <button
-              onClick={() => setAuthMode('login')}
-              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'login' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Log In
-              {authMode === 'login' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
-            </button>
-          </div>
-
-          <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">
-            {authMode === 'signup' ? 'Get started for free' : 'Welcome back'}
-          </h2>
-          <p className="text-slate-500 mb-8 text-center text-sm">
-            {authMode === 'signup'
-              ? 'Join thousands of creators writing undetectable text.'
-              : 'Sign in to access your history and saved tones.'}
-          </p>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-            />
-            <Button
-              variant="primary"
-              className="w-full py-3 text-sm shadow-lg shadow-rose-900/20"
-              onClick={handleEmailAuth}
-              isLoading={isLoading && !!email}
-            >
-              {authMode === 'signup' ? 'Create Account' : 'Log In'}
-            </Button>
-
-            {authMode === 'login' && (
-              <button
-                type="button"
-                onClick={onForgotPassword}
-                className="w-full mt-3 text-sm text-rose-600 hover:text-rose-700 font-medium"
-              >
-                Forgot password?
-              </button>
-            )}
-          </div>
-
-          <div className="mt-6 text-xs text-slate-400 text-center">
-            By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-slate-600">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-600">Privacy Policy</span>.
-          </div>
-        </div>
-        <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
-          <button onClick={onBack} className="text-sm text-slate-500 hover:text-slate-800 font-medium">
-            Back to Home
-          </button>
-        </div>
-      </div>
-      <footer className="absolute bottom-4 left-0 right-0 text-center text-slate-400 text-xs">
-        © 2025 MinihaAI. All rights reserved. <span className="font-semibold text-slate-500">Developed By Sahil Haq</span>
-      </footer>
-    </div>
-  );
-};
 
 // --- Settings Modal for API Key ---
 interface SettingsModalProps {

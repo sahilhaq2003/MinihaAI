@@ -555,7 +555,11 @@ const App = () => {
       }
     }
 
-    setView(View.EDITOR);
+    if (userProfile?.email === 'admin1969@gmail.com') {
+      setView(View.ADMIN_DASHBOARD);
+    } else {
+      setView(View.EDITOR);
+    }
   };
 
   const handleLogout = async () => {
@@ -1309,7 +1313,15 @@ const App = () => {
 
       {view === View.PRIVACY_POLICY && <PrivacyPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
       {view === View.TERMS_CONDITIONS && <TermsConditions onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
-      {view === View.ADMIN_DASHBOARD && <AdminDashboard onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
+      {view === View.ADMIN_DASHBOARD && (
+        <AdminDashboard
+          onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)}
+          onLogout={async () => {
+            await handleLogout();
+            setView(View.AUTH);
+          }}
+        />
+      )}
 
       {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.ADMIN_DASHBOARD) && (
         <>
@@ -1342,12 +1354,9 @@ const App = () => {
                     isPremium: updatedUser.isPremium || false
                   }));
                 }}
-                onNavigateToAdmin={() => setView(View.ADMIN_DASHBOARD)}
               />
             )}
-            {view === View.ADMIN_DASHBOARD && (
-              <AdminDashboard onBack={() => setView(View.PROFILE)} />
-            )}
+
           </main>
           <footer className="py-4 px-4 border-t border-slate-100 bg-white">
             <div className="max-w-7xl mx-auto">

@@ -60,6 +60,25 @@ async function connectDB() {
     // In production, use migrations instead of sync({ alter: true })
     await sequelize.sync({ alter: true });
     console.log('✅ Database models synced.');
+
+    // Seed Admin User
+    const adminEmail = 'admin1969@gmail.com';
+    const adminUser = await User.findOne({ where: { email: adminEmail } });
+    if (!adminUser) {
+      console.log('👤 Creating initial Admin user...');
+      const hashedPassword = await bcrypt.hash('admin@2003', 10);
+      await User.create({
+        id: uuidv4(), // Ensure uuidv4 is available in scope or imports
+        email: adminEmail,
+        password: hashedPassword,
+        name: 'Super Admin',
+        provider: 'email',
+        is_premium: true,
+        email_verified: true,
+        created_at: new Date()
+      });
+      console.log('✅ Admin user created.');
+    }
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error.message);
     console.log('   Retrying in 5 seconds...');
@@ -578,7 +597,14 @@ app.get('/api/user/:userId/transactions', async (req, res) => {
 app.post('/api/payment/create', async (req, res) => {
   const { userId, amount } = req.body;
   try {
-    await User.update({ is_premium: true }, { where: { id: userId } });
+    const user = await User.findByPk(userId);
+    if (user) {
+      user.is_premium = true;
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 30);
+      user.premium_expires_at = expiry;
+      await user.save();
+    }
 
     const transaction = await Transaction.create({
       id: uuidv4(),
@@ -849,6 +875,40 @@ app.put('/api/user/:userId/photo', async (req, res) => {
 // --- ADMIN ROUTES ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
+// GET ALL USERS
+app.get('/api/admin/users', async (req, res) => {
+  const { adminPassword } = req.query;
+  if (adminPassword !== ADMIN_PASSWORD) {
+    return res.status(401).json({ success: false, message: 'Invalid admin password' });
+  }
+
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'email', 'name', 'is_premium', 'created_at'],
+      order: [['created_at', 'DESC']]
+    });
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error("Fetch Users Error:", err);
+    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
+});
+
+// DELETE USER
+app.delete('/api/admin/users/:id', async (req, res) => {
+  const { adminPassword } = req.query;
+  if (adminPassword !== ADMIN_PASSWORD) {
+    return res.status(401).json({ success: false, message: 'Invalid admin password' });
+  }
+
+  try {
+    await User.destroy({ where: { id: req.params.id } });
+    res.json({ success: true, message: 'User deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to delete user' });
+  }
+});
+
 app.get('/api/admin/payments', async (req, res) => {
   const { adminPassword } = req.query;
   if (adminPassword !== ADMIN_PASSWORD) {
@@ -883,7 +943,45 @@ app.post('/api/admin/payments/approve', async (req, res) => {
     await request.save();
 
     // Upgrade user
-    await User.update({ is_premium: true }, { where: { id: request.user_id } });
+    const user = await User.findByPk(request.user_id);
+    if (user) {
+      user.is_premium = true;
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 30); // 30 Days
+      user.premium_expires_at = expiry;
+      await user.save();
+
+      // Send Activation Email
+      const expiryFormatted = expiry.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+          <div style="background-color: #e11d48; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Pro Plan Activated!</h1>
+          </div>
+          <div style="padding: 30px;">
+            <p>Hi ${user.name || 'User'},</p>
+            <p>Great news! Your payment has been approved and your <strong>Pro Plan</strong> is now active.</p>
+            <div style="background-color: #fce7f3; border-left: 4px solid #e11d48; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #e11d48; font-weight: bold;">Expiration Date: ${expiryFormatted}</p>
+            </div>
+            <p>You now have unlimited access to our AI humanizer and detection tools.</p>
+            <p>If you have any questions, feel free to contact our support team.</p>
+            <p style="margin-top: 30px;">Best regards,<br>The MinihaAI Team</p>
+          </div>
+          <div style="background-color: #f8fafc; padding: 15px; text-align: center; font-size: 12px; color: #64748b;">
+            &copy; 2026 MinihaAI. All rights reserved.
+          </div>
+        </div>
+      `;
+
+      sendEmail(user.email, 'Pro Plan Activated - MinihaAI', emailHtml)
+        .catch(err => console.error("Activation email failed:", err));
+    }
 
     // Create transaction record
     await Transaction.create({
@@ -936,6 +1034,9 @@ app.get('/api/user/:userId', async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    // Check expiration
+    await checkAndUpdatePremiumExpiration(user);
 
     res.status(200).json({
       success: true,

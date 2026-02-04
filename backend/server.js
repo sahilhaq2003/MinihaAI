@@ -57,8 +57,8 @@ async function connectDB() {
     console.log('✅ Connected to AWS RDS (MySQL) successfully.');
 
     // Sync models (create tables if not exist)
-    // Changed from alter: true to avoid "Too many keys" error in MySQL
-    await sequelize.sync();
+    // Using alter: true to update schema (e.g., adding is_verified to pending_signups)
+    await sequelize.sync({ alter: true });
     console.log('✅ Database models synced.');
 
     // Seed Admin User
@@ -86,10 +86,8 @@ async function connectDB() {
   }
 }
 
-// Only call connectDB when running directly (not in Vercel serverless)
-if (require.main === module) {
-  connectDB();
-}
+// Initialize Database Connection
+connectDB();
 
 // --- DATA MODELS ---
 

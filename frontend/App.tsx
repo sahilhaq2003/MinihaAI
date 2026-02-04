@@ -11,7 +11,7 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsConditions } from './components/TermsConditions';
 import { AdminDashboard } from './components/AdminDashboard';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
-import { logoutUser, signupWithEmail, loginWithEmail, verifyOTP } from './services/authService';
+import { logoutUser, signupWithEmail, loginWithEmail, verifyOTP, resendOTP } from './services/authService';
 import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary, DailyUsage } from './types';
 import {
   Wand2, Copy, RotateCcw, ArrowRightLeft, Quote, Check, Sparkles, ScanSearch, Activity, BarChart3, CheckCircle2,
@@ -90,6 +90,20 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
       } else {
         setError(err.message || "Authentication failed");
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!email) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await resendOTP(email);
+      setError("New verification code sent to email!");
+    } catch (err: any) {
+      setError(err.message || "Failed to resend code");
     } finally {
       setIsLoading(false);
     }
@@ -198,13 +212,23 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
             )}
 
             {showOtp && (
-              <button
-                type="button"
-                onClick={() => setShowOtp(false)}
-                className="w-full mt-3 text-sm text-slate-400 hover:text-slate-600"
-              >
-                Back to Signup
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={isLoading}
+                  className="w-full mt-2 text-sm text-rose-600 hover:text-rose-700 font-medium disabled:opacity-50"
+                >
+                  Didn't receive a code? Resend
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowOtp(false)}
+                  className="w-full text-sm text-slate-400 hover:text-slate-600"
+                >
+                  Back to Signup
+                </button>
+              </div>
             )}
           </div>
           <div className="mt-6 text-xs text-slate-400 text-center">

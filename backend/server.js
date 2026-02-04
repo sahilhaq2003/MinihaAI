@@ -159,6 +159,22 @@ const IPTracking = sequelize.define('IPTracking', {
   tableName: 'ip_tracking'
 });
 
+// Pending Signup Model - stores signup data until OTP verification
+const PendingSignup = sequelize.define('PendingSignup', {
+  id: { type: DataTypes.STRING, primaryKey: true },
+  email: { type: DataTypes.STRING, unique: true, allowNull: false },
+  password: { type: DataTypes.STRING, allowNull: false },
+  name: { type: DataTypes.STRING },
+  picture: { type: DataTypes.TEXT('medium') },
+  otp_code: { type: DataTypes.STRING, allowNull: false },
+  otp_expires: { type: DataTypes.DATE, allowNull: false },
+  client_ip: { type: DataTypes.STRING },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  timestamps: false,
+  tableName: 'pending_signups'
+});
+
 // Helper function to check and update expired premium status
 const checkAndUpdatePremiumExpiration = async (user) => {
   if (!user || !user.is_premium) {
@@ -260,7 +276,7 @@ const getClientIP = (req) => {
   return req.ip || req.connection.remoteAddress || 'unknown';
 };
 
-// SIGNUP
+// SIGNUP - Only stores pending signup, account created after OTP verification
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password } = req.body;
   const clientIP = getClientIP(req);
@@ -270,11 +286,17 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-
-
+    // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    // Check if there's already a pending signup for this email
+    const existingPending = await PendingSignup.findOne({ where: { email } });
+    if (existingPending) {
+      // Delete old pending signup and create new one
+      await existingPending.destroy();
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -284,54 +306,35 @@ app.post('/api/auth/signup', async (req, res) => {
     const otpExpires = new Date();
     otpExpires.setMinutes(otpExpires.getMinutes() + 15); // 15 mins expiry
 
-    const user = User.build({
+    const userName = email.split('@')[0];
+    const userPicture = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
+
+    // Store in pending signups - account will be created after OTP verification
+    const pendingSignup = await PendingSignup.create({
       id: uuidv4(),
       email,
       password: hashedPassword,
-      name: email.split('@')[0],
-      picture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
-      provider: 'email',
-      is_premium: false,
-      email_verified: false,
+      name: userName,
+      picture: userPicture,
       otp_code: otpCode,
       otp_expires: otpExpires,
+      client_ip: clientIP,
       created_at: new Date()
     });
 
-    const savedUser = await user.save();
-
-    if (clientIP !== 'unknown') {
-      try {
-        let ipTracking = await IPTracking.findByPk(clientIP);
-        if (ipTracking) {
-          ipTracking.account_count += 1;
-          ipTracking.last_account_created = new Date();
-          await ipTracking.save();
-        } else {
-          await IPTracking.create({
-            ip_address: clientIP,
-            account_count: 1,
-            last_account_created: new Date()
-          });
-        }
-      } catch (ipError) {
-        console.error('IP tracking error', ipError);
-      }
-    }
-
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: 'Account created! Please check your email for the OTP.',
+      message: 'OTP sent! Please check your email and verify to create your account.',
       requiresOtp: true,
-      email: savedUser.email
+      email: pendingSignup.email
     });
 
     // Send OTP Email
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
         <h2 style="color: #e11d48; text-align: center;">Verify Your Account</h2>
-        <p>Hi ${savedUser.name},</p>
-        <p>Thank you for signing up for MinihaAI. Please use the following One-Time Password (OTP) to verify your account:</p>
+        <p>Hi ${userName},</p>
+        <p>Thank you for signing up for MinihaAI. Please use the following One-Time Password (OTP) to verify and create your account:</p>
         
         <div style="text-align: center; margin: 30px 0;">
           <span style="background-color: #fce7f3; color: #e11d48; padding: 12px 24px; font-size: 24px; letter-spacing: 5px; font-weight: bold; border-radius: 8px; border: 1px dashed #e11d48;">${otpCode}</span>
@@ -351,53 +354,156 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-// VERIFY OTP (during signup)
+// VERIFY OTP (during signup) - Creates the actual user account after verification
 app.post('/api/auth/verify-otp', async (req, res) => {
   const { email, otpCode } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    // First check if user already exists (already verified)
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      if (existingUser.email_verified) {
+        return res.json({
+          success: true,
+          message: 'Email already verified',
+          user: { id: existingUser.id, name: existingUser.name, email: existingUser.email, avatar: existingUser.picture, isPremium: existingUser.is_premium }
+        });
+      }
+      // If user exists but not verified (old flow), handle it
+      if (existingUser.otp_code === otpCode && new Date() <= new Date(existingUser.otp_expires)) {
+        existingUser.email_verified = true;
+        existingUser.otp_code = null;
+        existingUser.otp_expires = null;
+        await existingUser.save();
+        return res.json({
+          success: true,
+          message: 'Email verified successfully!',
+          user: { id: existingUser.id, name: existingUser.name, email: existingUser.email, avatar: existingUser.picture, isPremium: existingUser.is_premium }
+        });
+      }
     }
 
-    if (user.email_verified) {
-      return res.json({
-        success: true,
-        message: 'Email already verified',
-        user: { id: user.id, name: user.name, email: user.email, avatar: user.picture, isPremium: user.is_premium }
-      });
+    // Check pending signups
+    const pendingSignup = await PendingSignup.findOne({ where: { email } });
+    if (!pendingSignup) {
+      return res.status(404).json({ success: false, message: 'No pending signup found. Please sign up first.' });
     }
 
-    if (user.otp_code !== otpCode) {
+    if (pendingSignup.otp_code !== otpCode) {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 
-    if (new Date() > new Date(user.otp_expires)) {
-      return res.status(400).json({ success: false, message: 'OTP expired' });
+    if (new Date() > new Date(pendingSignup.otp_expires)) {
+      // OTP expired, delete pending signup
+      await pendingSignup.destroy();
+      return res.status(400).json({ success: false, message: 'OTP expired. Please sign up again.' });
     }
 
-    // OTP Valid
-    user.email_verified = true;
-    user.otp_code = null;
-    user.otp_expires = null;
-    await user.save();
+    // OTP Valid - Now create the actual user account
+    const newUser = await User.create({
+      id: uuidv4(),
+      email: pendingSignup.email,
+      password: pendingSignup.password,
+      name: pendingSignup.name,
+      picture: pendingSignup.picture,
+      provider: 'email',
+      is_premium: false,
+      email_verified: true, // Already verified via OTP
+      otp_code: null,
+      otp_expires: null,
+      created_at: new Date()
+    });
+
+    // Track IP
+    const clientIP = pendingSignup.client_ip;
+    if (clientIP && clientIP !== 'unknown') {
+      try {
+        let ipTracking = await IPTracking.findByPk(clientIP);
+        if (ipTracking) {
+          ipTracking.account_count += 1;
+          ipTracking.last_account_created = new Date();
+          await ipTracking.save();
+        } else {
+          await IPTracking.create({
+            ip_address: clientIP,
+            account_count: 1,
+            last_account_created: new Date()
+          });
+        }
+      } catch (ipError) {
+        console.error('IP tracking error', ipError);
+      }
+    }
+
+    // Delete the pending signup
+    await pendingSignup.destroy();
 
     res.json({
       success: true,
-      message: 'Email verified successfully!',
+      message: 'Account created successfully!',
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.picture,
-        isPremium: user.is_premium
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        avatar: newUser.picture,
+        isPremium: newUser.is_premium
       }
     });
 
   } catch (error) {
     console.error("Verify OTP Error:", error);
     res.status(500).json({ success: false, message: "Server error during verification" });
+  }
+});
+
+// RESEND OTP (for pending signups)
+app.post('/api/auth/resend-otp', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    // Check if there's a pending signup
+    const pendingSignup = await PendingSignup.findOne({ where: { email } });
+    if (!pendingSignup) {
+      return res.status(404).json({ success: false, message: 'No pending signup found. Please sign up first.' });
+    }
+
+    // Generate new OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date();
+    otpExpires.setMinutes(otpExpires.getMinutes() + 15); // 15 mins expiry
+
+    pendingSignup.otp_code = otpCode;
+    pendingSignup.otp_expires = otpExpires;
+    await pendingSignup.save();
+
+    res.json({ success: true, message: 'New OTP sent! Please check your email.' });
+
+    // Send OTP Email
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #e11d48; text-align: center;">Your New Verification Code</h2>
+        <p>Hi ${pendingSignup.name},</p>
+        <p>Here is your new One-Time Password (OTP) to verify and create your account:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <span style="background-color: #fce7f3; color: #e11d48; padding: 12px 24px; font-size: 24px; letter-spacing: 5px; font-weight: bold; border-radius: 8px; border: 1px dashed #e11d48;">${otpCode}</span>
+        </div>
+        
+        <p>This code will expire in 15 minutes.</p>
+        <p style="font-size: 14px; color: #666;">If you didn't request this code, please ignore this email.</p>
+      </div>
+    `;
+
+    sendEmail(email, 'Your New MinihaAI Verification Code', emailHtml)
+      .catch(err => console.error(`❌ Error sending email to ${email}:`, err));
+
+  } catch (error) {
+    console.error("Resend OTP Error:", error);
+    res.status(500).json({ success: false, message: "Server error while resending OTP" });
   }
 });
 

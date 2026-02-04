@@ -198,7 +198,27 @@ export const verifyEmail = async (token: string, email: string): Promise<{ succe
   return { success: true, message: "Email verified" };
 };
 
-// Resend verification email
+// Resend OTP for signup
+export const resendOTP = async (email: string): Promise<{ success: boolean; message: string }> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Failed to resend OTP");
+      return data;
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      throw error;
+    }
+  }
+  return { success: true, message: "OTP sent" };
+};
+
+// Resend verification email (legacy support or general verification)
 export const resendVerificationEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
   if (USE_REAL_BACKEND) {
     try {

@@ -94,9 +94,6 @@ async function connectDB() {
   }
 }
 
-// Initialize Database Connection
-connectDB();
-
 // --- DATA MODELS ---
 
 const User = sequelize.define('User', {
@@ -181,6 +178,9 @@ const PendingSignup = sequelize.define('PendingSignup', {
   timestamps: false,
   tableName: 'pending_signups'
 });
+
+// Initialize Database Connection (After models are defined)
+connectDB();
 
 // Helper function to check and update expired premium status
 const checkAndUpdatePremiumExpiration = async (user) => {

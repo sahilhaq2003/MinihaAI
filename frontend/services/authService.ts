@@ -7,9 +7,9 @@ const MOCK_DELAY = 800;
 // Set to true to use the real SQLite backend server
 const USE_REAL_BACKEND = true;
 
-// For Vercel: use /api path (serverless functions)
-// For local dev with separate backend: set VITE_BACKEND_URL=http://localhost:3001/api
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '/api';
+// For separate Vercel deployment: set VITE_BACKEND_URL to your backend Vercel URL
+// Example: VITE_BACKEND_URL=https://minihaai-backend.vercel.app/api
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
 
 // Helper for local storage simulation (Fallback)
 const getLocalUsers = () => {

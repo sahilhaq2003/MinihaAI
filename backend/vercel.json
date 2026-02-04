@@ -1,16 +1,21 @@
 {
     "version": 2,
-    "installCommand": "npm install && npm install mysql2 --save",
-    "rewrites": [
+    "builds": [
         {
-            "source": "/(.*)",
-            "destination": "/api"
+            "src": "api/index.js",
+            "use": "@vercel/node",
+            "config": {
+                "includeFiles": [
+                    "server.js",
+                    "node_modules/**"
+                ]
+            }
         }
     ],
-    "functions": {
-        "api/index.js": {
-            "maxDuration": 60,
-            "includeFiles": "node_modules/mysql2/**"
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "/api/index.js"
         }
-    }
+    ]
 }

@@ -7,9 +7,9 @@ const MOCK_DELAY = 800;
 // Set to true to use the real SQLite backend server
 const USE_REAL_BACKEND = true;
 
-// Use environment variable for backend URL (Railway/Render)
-// Set VITE_BACKEND_URL in Vercel to your Railway backend URL
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
+// For Vercel: use /api path (serverless functions)
+// For local dev with separate backend: set VITE_BACKEND_URL=http://localhost:3001/api
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
 // Helper for local storage simulation (Fallback)
 const getLocalUsers = () => {

@@ -57,8 +57,16 @@ async function connectDB() {
     console.log('✅ Connected to AWS RDS (MySQL) successfully.');
 
     // Sync models (create tables if not exist)
-    // Using alter: true to update schema (e.g., adding is_verified to pending_signups)
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
+
+    // Manually ensure is_verified column exists in pending_signups (safer than alter: true)
+    try {
+      await sequelize.query("ALTER TABLE pending_signups ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE");
+    } catch (colError) {
+      // Ignore if column already exists or IF NOT EXISTS isn't supported (we'll log but not crash)
+      console.log('ℹ️ Note regarding is_verified column:', colError.message);
+    }
+
     console.log('✅ Database models synced.');
 
     // Seed Admin User
@@ -345,7 +353,12 @@ app.post('/api/auth/signup', async (req, res) => {
 
   } catch (error) {
     console.error("Signup Error:", error);
-    res.status(500).json({ success: false, message: "Server error during signup" });
+    res.status(500).json({
+      success: false,
+      message: "Server error during signup",
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

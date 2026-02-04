@@ -86,7 +86,10 @@ async function connectDB() {
   }
 }
 
-connectDB();
+// Only call connectDB when running directly (not in Vercel serverless)
+if (require.main === module) {
+  connectDB();
+}
 
 // --- DATA MODELS ---
 
@@ -1892,9 +1895,12 @@ app.delete('/api/user/:userId', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// Only start server when running directly (not in Vercel serverless)
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+}
 
 // Export for Vercel Serverless Functions
 module.exports = app;

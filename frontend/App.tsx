@@ -11,7 +11,7 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsConditions } from './components/TermsConditions';
 import { AdminDashboard } from './components/AdminDashboard';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
-import { logoutUser, signupWithEmail, loginWithEmail, verifyOTP, resendOTP } from './services/authService';
+import { logoutUser, signupWithEmail, loginWithEmail, verifyOTP, resendOTP, completeSignup } from './services/authService';
 import { View, Tone, HistoryItem, UserState, DetectionResult, EvaluationResult, Vocabulary, DailyUsage } from './types';
 import {
   Wand2, Copy, RotateCcw, ArrowRightLeft, Quote, Check, Sparkles, ScanSearch, Activity, BarChart3, CheckCircle2,
@@ -27,8 +27,8 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // OTP State
-  const [showOtp, setShowOtp] = useState(false);
+  // Signup Steps State
+  const [signupStep, setSignupStep] = useState<'email' | 'otp' | 'password'>('email');
   const [otp, setOtp] = useState('');
 
   useEffect(() => {
@@ -37,59 +37,72 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
     setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setShowOtp(false);
+    setSignupStep('email');
     setOtp('');
   }, [authMode]);
 
   const handleEmailAuth = async () => {
-    if ((!email || !password || (authMode === 'signup' && !confirmPassword)) && !showOtp) {
-      setError("Please fill in all fields.");
-      return;
-    }
-
-    if (authMode === 'signup' && !showOtp && password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (showOtp && !otp) {
-      setError("Please enter the verification code.");
-      return;
+    // Basic validation
+    if (authMode === 'login') {
+      if (!email || !password) {
+        setError("Please fill in all fields.");
+        return;
+      }
+    } else {
+      // Signup validations per step
+      if (signupStep === 'email' && !email) {
+        setError("Email is required.");
+        return;
+      }
+      if (signupStep === 'otp' && !otp) {
+        setError("Verification code is required.");
+        return;
+      }
+      if (signupStep === 'password') {
+        if (!password || !confirmPassword) {
+          setError("Password fields are required.");
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError("Passwords do not match.");
+          return;
+        }
+      }
     }
 
     setIsLoading(true);
     setError(null);
 
     try {
-      let result;
       if (authMode === 'signup') {
-        if (!showOtp) {
-          // Signup Step 1: Send OTP
-          result = await signupWithEmail(email, password);
+        if (signupStep === 'email') {
+          // Signup Step 1: Request OTP
+          const result = await signupWithEmail(email);
           if (result.requiresOtp) {
-            setShowOtp(true);
-            setError("Verification code sent to email!"); // Show as notification
-          } else if (result.user) {
-            onLoginSuccess(result.user);
+            setSignupStep('otp');
+            setError("Verification code sent to email!");
           }
-        } else {
+        } else if (signupStep === 'otp') {
           // Signup Step 2: Verify OTP
-          result = await verifyOTP(email, otp);
+          const result = await verifyOTP(email, otp);
+          if (result.success) {
+            setSignupStep('password');
+            setError("Email verified! Please set your password.");
+          }
+        } else if (signupStep === 'password') {
+          // Signup Step 3: Complete Signup
+          const result = await completeSignup(email, password);
           if (result.success && result.user) {
             onLoginSuccess(result.user);
           }
         }
       } else {
-        // Login
-        result = await loginWithEmail(email, password);
-        onLoginSuccess(result);
+        // Login Flow
+        const user = await loginWithEmail(email, password);
+        onLoginSuccess(user);
       }
     } catch (err: any) {
-      if (err.message && err.message.includes('verify your email')) {
-        setError(err.message);
-      } else {
-        setError(err.message || "Authentication failed");
-      }
+      setError(err.message || "Authentication failed");
     } finally {
       setIsLoading(false);
     }
@@ -120,16 +133,16 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
           <div className="flex gap-4 border-b border-slate-100 mb-6">
             <button
               onClick={() => setAuthMode('signup')}
-              disabled={showOtp}
-              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'signup' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'} ${showOtp ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={authMode === 'signup' && signupStep !== 'email'}
+              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'signup' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'} ${(authMode === 'signup' && signupStep !== 'email') ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Create Account
               {authMode === 'signup' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
             </button>
             <button
               onClick={() => setAuthMode('login')}
-              disabled={showOtp}
-              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'login' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'} ${showOtp ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={authMode === 'signup' && signupStep !== 'email'}
+              className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${authMode === 'login' ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'} ${(authMode === 'signup' && signupStep !== 'email') ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Log In
               {authMode === 'login' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full"></div>}
@@ -137,14 +150,16 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">
-            {showOtp ? 'Verify Email' : (authMode === 'signup' ? 'Get started for free' : 'Welcome back')}
+            {authMode === 'login' ? 'Welcome back' : (signupStep === 'email' ? 'Get started for free' : signupStep === 'otp' ? 'Verify Email' : 'Set Password')}
           </h2>
           <p className="text-slate-500 mb-8 text-center text-sm">
-            {showOtp
-              ? `Enter the code sent to ${email}`
-              : (authMode === 'signup'
+            {authMode === 'login'
+              ? 'Sign in to access your history and saved tones.'
+              : (signupStep === 'email'
                 ? 'Join thousands of creators writing undetectable text.'
-                : 'Sign in to access your history and saved tones.')}
+                : signupStep === 'otp'
+                  ? `Enter the code sent to ${email}`
+                  : 'Create a strong password for your account.')}
           </p>
 
           {error && (
@@ -155,7 +170,7 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
           )}
 
           <div className="space-y-3">
-            {!showOtp ? (
+            {authMode === 'login' ? (
               <>
                 <input
                   type="email"
@@ -171,25 +186,49 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                 />
-                {authMode === 'signup' && (
+              </>
+            ) : (
+              // Signup View
+              <>
+                {signupStep === 'email' && (
                   <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                   />
                 )}
+                {signupStep === 'otp' && (
+                  <input
+                    type="text"
+                    placeholder="Enter 6-digit Code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-center text-lg tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                    autoFocus
+                  />
+                )}
+                {signupStep === 'password' && (
+                  <>
+                    <input
+                      type="password"
+                      placeholder="New Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                      autoFocus
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirm Password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                    />
+                  </>
+                )}
               </>
-            ) : (
-              <input
-                type="text"
-                placeholder="Enter 6-digit Code"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-center text-lg tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                autoFocus
-              />
             )}
 
             <Button
@@ -198,10 +237,12 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
               onClick={handleEmailAuth}
               isLoading={isLoading}
             >
-              {showOtp ? 'Verify & Continue' : (authMode === 'signup' ? 'Create Account' : 'Log In')}
+              {authMode === 'login'
+                ? 'Log In'
+                : (signupStep === 'email' ? 'Get OTP Code' : signupStep === 'otp' ? 'Verify Code' : 'Create Account')}
             </Button>
 
-            {!showOtp && authMode === 'login' && (
+            {authMode === 'login' && (
               <button
                 type="button"
                 onClick={onForgotPassword}
@@ -211,22 +252,24 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
               </button>
             )}
 
-            {showOtp && (
+            {authMode === 'signup' && (signupStep === 'otp' || signupStep === 'password') && (
               <div className="flex flex-col gap-2">
+                {signupStep === 'otp' && (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={isLoading}
+                    className="w-full mt-2 text-sm text-rose-600 hover:text-rose-700 font-medium disabled:opacity-50"
+                  >
+                    Didn't receive a code? Resend
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={handleResendOtp}
-                  disabled={isLoading}
-                  className="w-full mt-2 text-sm text-rose-600 hover:text-rose-700 font-medium disabled:opacity-50"
-                >
-                  Didn't receive a code? Resend
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowOtp(false)}
+                  onClick={() => setSignupStep('email')}
                   className="w-full text-sm text-slate-400 hover:text-slate-600"
                 >
-                  Back to Signup
+                  Back to Beginning
                 </button>
               </div>
             )}

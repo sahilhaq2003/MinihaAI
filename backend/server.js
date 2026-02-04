@@ -163,11 +163,12 @@ const IPTracking = sequelize.define('IPTracking', {
 const PendingSignup = sequelize.define('PendingSignup', {
   id: { type: DataTypes.STRING, primaryKey: true },
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
-  password: { type: DataTypes.STRING, allowNull: false },
+  password: { type: DataTypes.STRING, allowNull: true }, // Password set in final step
   name: { type: DataTypes.STRING },
   picture: { type: DataTypes.TEXT('medium') },
   otp_code: { type: DataTypes.STRING, allowNull: false },
   otp_expires: { type: DataTypes.DATE, allowNull: false },
+  is_verified: { type: DataTypes.BOOLEAN, defaultValue: false }, // Track if OTP verified
   client_ip: { type: DataTypes.STRING },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {
@@ -276,14 +277,14 @@ const getClientIP = (req) => {
   return req.ip || req.connection.remoteAddress || 'unknown';
 };
 
-// SIGNUP - Only stores pending signup, account created after OTP verification
+// SIGNUP - Step 1: Request OTP with Email
 app.post('/api/auth/signup', async (req, res) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
   const clientIP = getClientIP(req);
 
   try {
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
     }
 
     // Check if user already exists
@@ -295,11 +296,8 @@ app.post('/api/auth/signup', async (req, res) => {
     // Check if there's already a pending signup for this email
     const existingPending = await PendingSignup.findOne({ where: { email } });
     if (existingPending) {
-      // Delete old pending signup and create new one
       await existingPending.destroy();
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate 6-digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -309,22 +307,22 @@ app.post('/api/auth/signup', async (req, res) => {
     const userName = email.split('@')[0];
     const userPicture = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
 
-    // Store in pending signups - account will be created after OTP verification
+    // Store in pending signups
     const pendingSignup = await PendingSignup.create({
       id: uuidv4(),
       email,
-      password: hashedPassword,
       name: userName,
       picture: userPicture,
       otp_code: otpCode,
       otp_expires: otpExpires,
+      is_verified: false,
       client_ip: clientIP,
       created_at: new Date()
     });
 
     res.status(200).json({
       success: true,
-      message: 'OTP sent! Please check your email and verify to create your account.',
+      message: 'OTP sent! Please check your email to verify.',
       requiresOtp: true,
       email: pendingSignup.email
     });
@@ -332,16 +330,15 @@ app.post('/api/auth/signup', async (req, res) => {
     // Send OTP Email
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-        <h2 style="color: #e11d48; text-align: center;">Verify Your Account</h2>
-        <p>Hi ${userName},</p>
-        <p>Thank you for signing up for MinihaAI. Please use the following One-Time Password (OTP) to verify and create your account:</p>
+        <h2 style="color: #e11d48; text-align: center;">Verify Your Email</h2>
+        <p>Hi there,</p>
+        <p>You requested to create an account on MinihaAI. Please use the following code to verify your email:</p>
         
         <div style="text-align: center; margin: 30px 0;">
           <span style="background-color: #fce7f3; color: #e11d48; padding: 12px 24px; font-size: 24px; letter-spacing: 5px; font-weight: bold; border-radius: 8px; border: 1px dashed #e11d48;">${otpCode}</span>
         </div>
         
         <p>This code will expire in 15 minutes.</p>
-        <p style="font-size: 14px; color: #666;">If you didn't request this code, please ignore this email.</p>
       </div>
     `;
 
@@ -354,36 +351,11 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-// VERIFY OTP (during signup) - Creates the actual user account after verification
+// VERIFY OTP (during signup) - Step 2: Mark as verified
 app.post('/api/auth/verify-otp', async (req, res) => {
   const { email, otpCode } = req.body;
 
   try {
-    // First check if user already exists (already verified)
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      if (existingUser.email_verified) {
-        return res.json({
-          success: true,
-          message: 'Email already verified',
-          user: { id: existingUser.id, name: existingUser.name, email: existingUser.email, avatar: existingUser.picture, isPremium: existingUser.is_premium }
-        });
-      }
-      // If user exists but not verified (old flow), handle it
-      if (existingUser.otp_code === otpCode && new Date() <= new Date(existingUser.otp_expires)) {
-        existingUser.email_verified = true;
-        existingUser.otp_code = null;
-        existingUser.otp_expires = null;
-        await existingUser.save();
-        return res.json({
-          success: true,
-          message: 'Email verified successfully!',
-          user: { id: existingUser.id, name: existingUser.name, email: existingUser.email, avatar: existingUser.picture, isPremium: existingUser.is_premium }
-        });
-      }
-    }
-
-    // Check pending signups
     const pendingSignup = await PendingSignup.findOne({ where: { email } });
     if (!pendingSignup) {
       return res.status(404).json({ success: false, message: 'No pending signup found. Please sign up first.' });
@@ -394,23 +366,52 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 
     if (new Date() > new Date(pendingSignup.otp_expires)) {
-      // OTP expired, delete pending signup
       await pendingSignup.destroy();
       return res.status(400).json({ success: false, message: 'OTP expired. Please sign up again.' });
     }
 
-    // OTP Valid - Now create the actual user account
+    // OTP Valid - Mark as verified
+    pendingSignup.is_verified = true;
+    await pendingSignup.save();
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully! Please set your password.',
+      email: pendingSignup.email
+    });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ success: false, message: "Server error during verification" });
+  }
+});
+
+// COMPLETE SIGNUP - Step 3: Set password and create account
+app.post('/api/auth/complete-signup', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+
+    const pendingSignup = await PendingSignup.findOne({ where: { email, is_verified: true } });
+    if (!pendingSignup) {
+      return res.status(400).json({ success: false, message: 'Email not verified or session expired.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the actual user account
     const newUser = await User.create({
       id: uuidv4(),
       email: pendingSignup.email,
-      password: pendingSignup.password,
+      password: hashedPassword,
       name: pendingSignup.name,
       picture: pendingSignup.picture,
       provider: 'email',
       is_premium: false,
-      email_verified: true, // Already verified via OTP
-      otp_code: null,
-      otp_expires: null,
+      email_verified: true,
       created_at: new Date()
     });
 
@@ -435,7 +436,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
       }
     }
 
-    // Delete the pending signup
+    // Delete the pending signup record
     await pendingSignup.destroy();
 
     res.json({
@@ -451,8 +452,8 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Verify OTP Error:", error);
-    res.status(500).json({ success: false, message: "Server error during verification" });
+    console.error("Complete Signup Error:", error);
+    res.status(500).json({ success: false, message: "Server error during account creation" });
   }
 });
 

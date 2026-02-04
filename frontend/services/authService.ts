@@ -23,13 +23,13 @@ const saveLocalUser = (email: string, userData: any) => {
   localStorage.setItem('miniha_users_db', JSON.stringify(users));
 };
 
-export const signupWithEmail = async (email: string, password: string): Promise<any> => {
+export const signupWithEmail = async (email: string): Promise<any> => {
   if (USE_REAL_BACKEND) {
     try {
       const response = await fetch(`${BACKEND_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email })
       });
 
       const data = await response.json();
@@ -41,28 +41,44 @@ export const signupWithEmail = async (email: string, password: string): Promise<
     }
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     setTimeout(() => {
-      const users = getLocalUsers();
-      if (users[email]) {
-        reject(new Error("User already exists with this email."));
-        return;
-      }
+      resolve({ success: true, requiresOtp: true, email });
+    }, MOCK_DELAY);
+  });
+};
 
+export const completeSignup = async (email: string, password: string): Promise<any> => {
+  if (USE_REAL_BACKEND) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/complete-signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Account creation failed");
+      return data;
+    } catch (error) {
+      console.error("Backend complete signup error:", error);
+      throw error;
+    }
+  }
+
+  return new Promise((resolve) => {
+    setTimeout(() => {
       const newUser = {
         id: "user_" + Date.now(),
-        name: email.split('@')[0], // Default name from email
+        name: email.split('@')[0],
         email: email,
         password: password,
         isPremium: false,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
       };
-
       saveLocalUser(email, newUser);
-
-      // Return profile (without password)
       const { password: _, ...profile } = newUser;
-      resolve(profile);
+      resolve({ success: true, user: profile });
     }, MOCK_DELAY);
   });
 };

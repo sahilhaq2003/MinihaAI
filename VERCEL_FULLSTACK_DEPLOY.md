@@ -64,42 +64,42 @@ Add **ALL** these variables:
 ### Database (AWS RDS MySQL)
 | Variable | Value |
 |----------|-------|
-| `DB_HOST` | `minihaai-db.ctaqimoaafgp.eu-north-1.rds.amazonaws.com` |
-| `DB_USER` | `admin` |
-| `DB_PASSWORD` | `minihaAI2003` |
-| `DB_NAME` | `minihaai` |
+| `DB_HOST` | `your-rds-endpoint.region.rds.amazonaws.com` |
+| `DB_USER` | `your-db-username` |
+| `DB_PASSWORD` | `your-db-password` |
+| `DB_NAME` | `your-database-name` |
 
 ### Email Configuration
 | Variable | Value |
 |----------|-------|
 | `EMAIL_SERVICE` | `gmail` |
-| `EMAIL_USER` | `minihaai2003@gmail.com` |
-| `EMAIL_PASSWORD` | `yddy kbtg wpek piay` |
+| `EMAIL_USER` | `your-email@gmail.com` |
+| `EMAIL_PASSWORD` | `your-gmail-app-password` |
 
 ### AI API
 | Variable | Value |
 |----------|-------|
-| `GEMINI_API_KEY` | `AIzaSyAV3-zFZRhCnsH5qLMdc81TVW3zzIjaQDE` |
+| `GEMINI_API_KEY` | `your-gemini-api-key` |
 
 ### Admin Access
 | Variable | Value |
 |----------|-------|
-| `ADMIN_PASSWORD` | `admin@2003` |
+| `ADMIN_PASSWORD` | `your-admin-password` |
 
 ---
 
-## 📋 Complete Environment Variables (Copy-Paste)
+## 📋 Environment Variables Template
 
 ```
-DB_HOST=minihaai-db.ctaqimoaafgp.eu-north-1.rds.amazonaws.com
-DB_USER=admin
-DB_PASSWORD=minihaAI2003
-DB_NAME=minihaai
+DB_HOST=your-rds-endpoint.region.rds.amazonaws.com
+DB_USER=your-db-username
+DB_PASSWORD=your-db-password
+DB_NAME=your-database-name
 EMAIL_SERVICE=gmail
-EMAIL_USER=minihaai2003@gmail.com
-EMAIL_PASSWORD=yddy kbtg wpek piay
-GEMINI_API_KEY=AIzaSyAV3-zFZRhCnsH5qLMdc81TVW3zzIjaQDE
-ADMIN_PASSWORD=admin@2003
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
+GEMINI_API_KEY=your-gemini-api-key
+ADMIN_PASSWORD=your-admin-password
 ```
 
 ---
@@ -147,18 +147,18 @@ The `vercel.json` configuration routes all `/api/*` requests to the serverless f
 
 For local development with the serverless API:
 
-1. Create `.env` file in `frontend/` folder:
+1. Create `.env` file in `frontend/` folder (DO NOT commit this file):
 ```env
 VITE_BACKEND_URL=http://localhost:3001/api
-DB_HOST=minihaai-db.ctaqimoaafgp.eu-north-1.rds.amazonaws.com
-DB_USER=admin
-DB_PASSWORD=minihaAI2003
-DB_NAME=minihaai
+DB_HOST=your-rds-endpoint
+DB_USER=your-db-username
+DB_PASSWORD=your-db-password
+DB_NAME=your-database-name
 EMAIL_SERVICE=gmail
-EMAIL_USER=minihaai2003@gmail.com
-EMAIL_PASSWORD=yddy kbtg wpek piay
-GEMINI_API_KEY=AIzaSyAV3-zFZRhCnsH5qLMdc81TVW3zzIjaQDE
-ADMIN_PASSWORD=admin@2003
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
+GEMINI_API_KEY=your-gemini-api-key
+ADMIN_PASSWORD=your-admin-password
 ```
 
 2. Run the backend separately:

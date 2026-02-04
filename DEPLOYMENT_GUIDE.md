@@ -36,16 +36,16 @@ In Railway Dashboard → Your Project → **Variables** tab, add:
 | Variable | Value | Description |
 |----------|-------|-------------|
 | `PORT` | `3001` | Server port |
-| `DB_HOST` | `minihaai-db.ctaqimoaafgp.eu-north-1.rds.amazonaws.com` | AWS RDS Host |
-| `DB_USER` | `admin` | Database username |
-| `DB_PASSWORD` | `minihaAI2003` | Database password |
-| `DB_NAME` | `minihaai` | Database name |
+| `DB_HOST` | `your-rds-endpoint` | AWS RDS Host |
+| `DB_USER` | `your-db-username` | Database username |
+| `DB_PASSWORD` | `your-db-password` | Database password |
+| `DB_NAME` | `your-database-name` | Database name |
 | `EMAIL_SERVICE` | `gmail` | Email provider |
-| `EMAIL_USER` | `minihaai2003@gmail.com` | Email address |
-| `EMAIL_PASSWORD` | `yddy kbtg wpek piay` | Gmail App Password |
-| `GEMINI_API_KEY` | `AIzaSyAV3-zFZRhCnsH5qLMdc81TVW3zzIjaQDE` | Gemini API Key |
-| `ADMIN_PASSWORD` | `admin@2003` | Admin dashboard password |
-| `FRONTEND_URL` | `https://your-app.vercel.app` | Your Vercel URL (update after deploying frontend) |
+| `EMAIL_USER` | `your-email@gmail.com` | Email address |
+| `EMAIL_PASSWORD` | `your-gmail-app-password` | Gmail App Password |
+| `GEMINI_API_KEY` | `your-gemini-api-key` | Gemini API Key |
+| `ADMIN_PASSWORD` | `your-admin-password` | Admin dashboard password |
+| `FRONTEND_URL` | `https://your-app.vercel.app` | Your Vercel URL |
 
 ## Step 4: Get Your Railway Backend URL
 After deployment, Railway will give you a URL like:
@@ -106,50 +106,50 @@ In Vercel Dashboard → Your Project → **Settings** → **Environment Variable
 1. Go to **Settings** → **Environment Variables**
 2. Click **"Add"**
 3. **Key:** `VITE_BACKEND_URL`
-4. **Value:** `https://minihaai-backend-production.up.railway.app/api`
+4. **Value:** `https://your-railway-url.up.railway.app/api`
 5. Select all environments: Production, Preview, Development
 6. Click **"Save"**
 7. Click **"Redeploy"** to apply changes
 
 ---
 
-# 📋 Complete Environment Variables List
+# 📋 Environment Variables Template
 
-## Backend (Railway) - ALL Variables
+## Backend (Railway)
 
 ```env
 # Server Configuration
 PORT=3001
-FRONTEND_URL=https://minihaai.vercel.app
+FRONTEND_URL=https://your-app.vercel.app
 
 # AWS RDS (MySQL) Database Connection
-DB_HOST=minihaai-db.ctaqimoaafgp.eu-north-1.rds.amazonaws.com
-DB_USER=admin
-DB_PASSWORD=minihaAI2003
-DB_NAME=minihaai
+DB_HOST=your-rds-endpoint.region.rds.amazonaws.com
+DB_USER=your-db-username
+DB_PASSWORD=your-db-password
+DB_NAME=your-database-name
 
 # Email Configuration (Gmail App Password)
 EMAIL_SERVICE=gmail
-EMAIL_USER=minihaai2003@gmail.com
-EMAIL_PASSWORD=yddy kbtg wpek piay
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
 
 # Gemini AI API Key
-GEMINI_API_KEY=AIzaSyAV3-zFZRhCnsH5qLMdc81TVW3zzIjaQDE
+GEMINI_API_KEY=your-gemini-api-key
 
 # Admin Access
-ADMIN_PASSWORD=admin@2003
+ADMIN_PASSWORD=your-admin-password
 
-# Optional: Twilio SMS (leave empty if not using)
+# Optional: Twilio SMS
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_VERIFY_SERVICE_SID=
 TWILIO_PHONE_NUMBER=
 ```
 
-## Frontend (Vercel) - Only 1 Variable Needed
+## Frontend (Vercel)
 
 ```env
-VITE_BACKEND_URL=https://minihaai-backend-production.up.railway.app/api
+VITE_BACKEND_URL=https://your-railway-url.up.railway.app/api
 ```
 
 ---
@@ -162,7 +162,7 @@ After getting your Vercel URL, update the CORS settings in `backend/server.js`:
 
 ```javascript
 const allowedOrigins = [
-  'https://minihaai.vercel.app',     // Your Vercel domain
+  'https://your-app.vercel.app',      // Your Vercel domain
   'https://your-custom-domain.com',   // If using custom domain
   'http://localhost:5173',            // Local dev
   'http://localhost:3000'             // Local dev
@@ -180,7 +180,7 @@ Set `FRONTEND_URL` to your actual Vercel URL in Railway.
 
 # 🧪 Testing Your Deployment
 
-1. Visit your Vercel URL (e.g., `https://minihaai.vercel.app`)
+1. Visit your Vercel URL (e.g., `https://your-app.vercel.app`)
 2. Try to sign up with a new email
 3. Check if you receive the verification email
 4. Try logging in
@@ -213,8 +213,8 @@ Set `FRONTEND_URL` to your actual Vercel URL in Railway.
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Frontend | `https://minihaai.vercel.app` | User interface |
-| Backend | `https://minihaai-backend-production.up.railway.app` | API server |
+| Frontend | `https://your-app.vercel.app` | User interface |
+| Backend | `https://your-railway-url.up.railway.app` | API server |
 | Database | AWS RDS MySQL | Data storage |
 
 ---
@@ -223,7 +223,7 @@ Set `FRONTEND_URL` to your actual Vercel URL in Railway.
 
 Your MinihaAI application should now be live!
 
-- **Frontend:** `https://minihaai.vercel.app` (or your custom domain)
+- **Frontend:** `https://your-app.vercel.app` (or your custom domain)
 - **Backend API:** `https://your-railway-url.up.railway.app`
 
 Happy coding! 🚀

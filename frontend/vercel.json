@@ -1,8 +1,7 @@
 {
-  "buildCommand": "npx vite build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' npx --yes vite build",
   "outputDirectory": "dist",
-  "devCommand": "npx vite",
-  "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
     {

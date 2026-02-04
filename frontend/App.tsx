@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 // --- Auth Page Component ---
-const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => void; onForgotPassword: () => void }> = ({ onLoginSuccess, onBack, onForgotPassword }) => {
+const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => void; onForgotPassword: () => void; onNavigate: (view: View) => void }> = ({ onLoginSuccess, onBack, onForgotPassword, onNavigate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
   const [email, setEmail] = useState('');
@@ -208,7 +208,7 @@ const AuthPage: React.FC<{ onLoginSuccess: (user: any) => void; onBack: () => vo
             )}
           </div>
           <div className="mt-6 text-xs text-slate-400 text-center">
-            By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-slate-600">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-600">Privacy Policy</span>.
+            By clicking continue, you agree to our <span onClick={() => onNavigate(View.TERMS_CONDITIONS)} className="underline cursor-pointer hover:text-slate-600">Terms of Service</span> and <span onClick={() => onNavigate(View.PRIVACY_POLICY)} className="underline cursor-pointer hover:text-slate-600">Privacy Policy</span>.
           </div>
         </div>
         <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
@@ -385,13 +385,13 @@ const App = () => {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  // Default tone changed to Academic
-  const [tone, setTone] = useState<Tone>(Tone.ACADEMIC);
+  // Default tone changed to Standard
+  const [tone, setTone] = useState<Tone>(Tone.STANDARD);
 
   // Advanced Settings State
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [vocabulary, setVocabulary] = useState<Vocabulary>(Vocabulary.STANDARD);
-  const [intensity, setIntensity] = useState<number>(50);
+  const [intensity, setIntensity] = useState<number>(70);
 
   // API Key is now handled securely on the backend - no need for client-side storage
 
@@ -528,7 +528,7 @@ const App = () => {
         setView(View.EDITOR);
       }
     } else {
-      if (view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD) {
+      if (view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS) {
         setView(View.LANDING);
       }
     }
@@ -555,7 +555,7 @@ const App = () => {
       }
     }
 
-    if (userProfile?.email === 'admin1969@gmail.com') {
+    if (userProfile?.email === 'admin2003@gmail.com') {
       setView(View.ADMIN_DASHBOARD);
     } else {
       setView(View.EDITOR);
@@ -1303,7 +1303,7 @@ const App = () => {
       {/* Conditional Rendering for Views */}
       {view === View.LANDING && <LandingPage onGetStarted={() => setView(View.AUTH)} onNavigate={setView} />}
 
-      {view === View.AUTH && <AuthPage onLoginSuccess={handleLoginSuccess} onBack={() => setView(View.LANDING)} onForgotPassword={() => setView(View.RESET_PASSWORD)} />}
+      {view === View.AUTH && <AuthPage onLoginSuccess={handleLoginSuccess} onBack={() => setView(View.LANDING)} onForgotPassword={() => setView(View.RESET_PASSWORD)} onNavigate={setView} />}
 
       {view === View.VERIFY_EMAIL && <VerifyEmail onBack={() => setView(View.LANDING)} />}
 

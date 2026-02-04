@@ -33,7 +33,7 @@ interface AdminDashboardProps {
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
 // We use the default API key here because access is protected by the specific Admin Login credential
-const ADMIN_API_KEY = 'admin123';
+const ADMIN_API_KEY = 'admin@2003';
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'payments'>('overview');
@@ -157,7 +157,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout
               <span className="font-bold text-xl tracking-tight">Admin<span className="text-rose-400">Panel</span></span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-400 hidden sm:inline">admin1969@gmail.com</span>
+              <span className="text-sm text-slate-400 hidden sm:inline">admin2003@gmail.com</span>
               <button
                 onClick={onLogout}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 text-sm hover:bg-slate-700 hover:text-white hover:border-slate-600 transition-all"

@@ -326,13 +326,6 @@ app.post('/api/auth/signup', async (req, res) => {
       created_at: new Date()
     });
 
-    res.status(200).json({
-      success: true,
-      message: 'OTP sent! Please check your email to verify.',
-      requiresOtp: true,
-      email: pendingSignup.email
-    });
-
     // Send OTP Email
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
@@ -348,8 +341,18 @@ app.post('/api/auth/signup', async (req, res) => {
       </div>
     `;
 
-    sendEmail(email, 'Your MinihaAI Verification Code', emailHtml)
-      .catch(err => console.error(`❌ Error sending email to ${email}:`, err));
+    try {
+      await sendEmail(email, 'Your MinihaAI Verification Code', emailHtml);
+      res.status(200).json({
+        success: true,
+        message: 'OTP sent! Please check your email to verify.',
+        requiresOtp: true,
+        email: pendingSignup.email
+      });
+    } catch (emailErr) {
+      console.error(`❌ Error sending email to ${email}:`, emailErr);
+      res.status(500).json({ success: false, message: "Created request but failed to send email. Please try resending." });
+    }
 
   } catch (error) {
     console.error("Signup Error:", error);
@@ -492,8 +495,6 @@ app.post('/api/auth/resend-otp', async (req, res) => {
     pendingSignup.otp_expires = otpExpires;
     await pendingSignup.save();
 
-    res.json({ success: true, message: 'New OTP sent! Please check your email.' });
-
     // Send OTP Email
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
@@ -510,8 +511,13 @@ app.post('/api/auth/resend-otp', async (req, res) => {
       </div>
     `;
 
-    sendEmail(email, 'Your New MinihaAI Verification Code', emailHtml)
-      .catch(err => console.error(`❌ Error sending email to ${email}:`, err));
+    try {
+      await sendEmail(email, 'Your New MinihaAI Verification Code', emailHtml);
+      res.json({ success: true, message: 'New OTP sent! Please check your email.' });
+    } catch (emailErr) {
+      console.error(`❌ Error sending email to ${email}:`, emailErr);
+      res.status(500).json({ success: false, message: "Failed to send email. Please try again." });
+    }
 
   } catch (error) {
     console.error("Resend OTP Error:", error);

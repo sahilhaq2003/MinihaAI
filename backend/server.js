@@ -21,40 +21,47 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- DATABASE CONNECTION (AWS RDS / MySQL) ---
+// --- DATABASE CONNECTION (Supabase / PostgreSQL) ---
 const DB_HOST = process.env.DB_HOST;
 const DB_USER = process.env.DB_USER;
 const DB_PASSWORD = process.env.DB_PASSWORD;
-const DB_NAME = process.env.DB_NAME || 'minihaai';
+const DB_NAME = process.env.DB_NAME || 'postgres';
+const DATABASE_URL = process.env.DATABASE_URL;
 
-if (!DB_HOST || !DB_USER || !DB_PASSWORD) {
+if (!DATABASE_URL && (!DB_HOST || !DB_USER || !DB_PASSWORD)) {
   console.error('❌ Database credentials missing in .env!');
-  console.error('   Please set DB_HOST, DB_USER, DB_PASSWORD.');
+  console.error('   Please set DATABASE_URL (preferred) or DB_HOST, DB_USER, DB_PASSWORD.');
 }
 
-const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-  host: DB_HOST,
-  dialect: 'mysql',
-  logging: false, // Set to console.log to see SQL queries
-  pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
-  },
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false // Often needed for AWS RDS if self-signed certs or simple setup
-    }
-  }
-});
+const sequelize = DATABASE_URL 
+  ? new Sequelize(DATABASE_URL, {
+      dialect: 'postgres',
+      logging: false,
+      dialectOptions: { ssl: { require: true, rejectUnauthorized: false } }
+    })
+  : new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+      host: DB_HOST,
+      dialect: 'postgres',
+      logging: false, // Set to console.log to see SQL queries
+      pool: {
+        max: 10,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+      },
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false // Often needed for Supabase
+        }
+      }
+    });
 
 // Test Database Connection
 async function connectDB() {
   try {
     await sequelize.authenticate();
-    console.log('✅ Connected to AWS RDS (MySQL) successfully.');
+    console.log('✅ Connected to Supabase (PostgreSQL) successfully.');
 
     // Sync models (create tables if not exist)
     await sequelize.sync();
@@ -260,8 +267,8 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'MinihaAI Backend API is running (AWS RDS Edition)!',
-    database: 'MySQL (AWS RDS)',
+    message: 'MinihaAI Backend API is running (Supabase Edition)!',
+    database: 'PostgreSQL (Supabase)',
     timestamp: new Date().toISOString()
   });
 });

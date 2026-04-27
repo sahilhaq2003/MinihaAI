@@ -9,6 +9,7 @@ import { ResetPassword } from './components/ResetPassword';
 import { PaymentSuccess } from './components/PaymentSuccess';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsConditions } from './components/TermsConditions';
+import { Support } from './components/Support';
 import { AdminDashboard } from './components/AdminDashboard';
 import { humanizeText, detectAIContent, evaluateQuality } from './services/geminiService';
 import { logoutUser, signupWithEmail, loginWithEmail, verifyOTP, resendOTP, completeSignup } from './services/authService';
@@ -392,6 +393,9 @@ const LandingPage: React.FC<{ onGetStarted: () => void; onNavigate: (view: View)
               <button onClick={() => onNavigate(View.TERMS_CONDITIONS)} className="text-slate-500 hover:text-slate-700 transition-colors">
                 Terms & Conditions
               </button>
+              <button onClick={() => onNavigate(View.SUPPORT)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                Support
+              </button>
             </div>
           </div>
         </div>
@@ -584,6 +588,11 @@ const App = () => {
       }
     }
 
+    if (window.location.pathname.includes('support')) {
+      setView(View.SUPPORT);
+      return;
+    }
+
     // Payment success is now handled directly in Pricing component
     // No need to check for session_id in URL
   }, []);
@@ -595,7 +604,7 @@ const App = () => {
         setView(View.EDITOR);
       }
     } else {
-      if (view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS) {
+      if (view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.SUPPORT) {
         setView(View.LANDING);
       }
     }
@@ -1380,6 +1389,7 @@ const App = () => {
 
       {view === View.PRIVACY_POLICY && <PrivacyPolicy onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
       {view === View.TERMS_CONDITIONS && <TermsConditions onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
+      {view === View.SUPPORT && <Support onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)} />}
       {view === View.ADMIN_DASHBOARD && (
         <AdminDashboard
           onBack={() => setView(userState.isLoggedIn ? View.EDITOR : View.LANDING)}
@@ -1390,7 +1400,7 @@ const App = () => {
         />
       )}
 
-      {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.ADMIN_DASHBOARD) && (
+      {(view !== View.LANDING && view !== View.AUTH && view !== View.VERIFY_EMAIL && view !== View.RESET_PASSWORD && view !== View.PAYMENT_SUCCESS && view !== View.PRIVACY_POLICY && view !== View.TERMS_CONDITIONS && view !== View.SUPPORT && view !== View.ADMIN_DASHBOARD) && (
         <>
           <Header
             currentView={view}
@@ -1437,6 +1447,9 @@ const App = () => {
                   </button>
                   <button onClick={() => setView(View.TERMS_CONDITIONS)} className="text-slate-500 hover:text-slate-700 transition-colors">
                     Terms & Conditions
+                  </button>
+                  <button onClick={() => setView(View.SUPPORT)} className="text-slate-500 hover:text-slate-700 transition-colors">
+                    Support
                   </button>
                 </div>
               </div>
